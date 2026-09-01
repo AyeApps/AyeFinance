@@ -3,7 +3,7 @@ import { authStorage } from './authStorage';
 import { Account, AccountSummary, PaginatedResponse, RecurringItem, Transaction, User } from '../types';
 
 export const getApiBaseUrl = (): string => {
-  let url = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8003/api/v1';
+  let url = process.env.EXPO_PUBLIC_API_URL || 'https://api-ayfice.ayeapps.com/api/v1';
   if (Platform.OS === 'android' && url.includes('localhost')) {
     url = url.replace('localhost', '10.0.2.2').replace('127.0.0.1', '10.0.2.2');
   }
@@ -11,7 +11,7 @@ export const getApiBaseUrl = (): string => {
 };
 
 export const getAuthApiBaseUrl = (): string => {
-  let url = process.env.EXPO_PUBLIC_AUTH_API_URL || 'http://localhost:8000/api/v1';
+  let url = process.env.EXPO_PUBLIC_AUTH_API_URL || 'https://api-auth.ayeapps.com/api/v1';
   if (Platform.OS === 'android' && url.includes('localhost')) {
     url = url.replace('localhost', '10.0.2.2').replace('127.0.0.1', '10.0.2.2');
   }
