@@ -2,8 +2,8 @@
 
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?style=flat-square&logo=fastapi&logoColor=white)
 ![Next.js 16](https://img.shields.io/badge/Next.js-16_Atelier-black?style=flat-square&logo=next.js&logoColor=white)
-![SwiftUI](https://img.shields.io/badge/iOS-SwiftUI_6-FA7343?style=flat-square&logo=swift&logoColor=white)
-![Compose](https://img.shields.io/badge/Android-Compose-4285F4?style=flat-square&logo=android&logoColor=white)
+![React Native](https://img.shields.io/badge/React_Native-0.86-61DAFB?style=flat-square&logo=react&logoColor=black)
+![Expo](https://img.shields.io/badge/Expo-CNG_57-000020?style=flat-square&logo=expo&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-Beanie_ODM-47A248?style=flat-square&logo=mongodb&logoColor=white)
 
 **AyeFinance** es la aplicación integral de gestión y proyección de finanzas personales del ecosistema **AyeApps**. Permite controlar múltiples cuentas bancarias (corrientes, ahorros, inversiones), registrar transferencias, ingresos y gastos en tiempo real, y automatizar proyecciones de flujo de efectivo a 30 días basadas en gastos fijos y suscripciones recurrentes.
@@ -28,8 +28,10 @@ AyeFinance/
 │   │   ├── app/        # Pages ((auth)/login, (dashboard)/*)
 │   │   ├── components/ # Atelier UI (Cards, Badges, Modals, Forms)
 │   │   └── lib/        # API client y auth helpers
-├── ios-app/            # Swift 6 + SwiftUI + MVVM (@Observable) + Keychain
-├── android-app/        # Kotlin + Jetpack Compose + Clean Architecture + EncryptedSharedPrefs
+├── mobile/             # React Native 0.86 + Expo CNG 57 (Single Codebase iOS + Android)
+│   ├── build.sh        # Pipeline interactivo de compilación y Metro Bundler
+│   ├── app.json        # Configuración de bundle (com.ayeapps.ayefinance)
+│   └── src/            # AuthScreen (Google, Apple, Email), Dashboard, Accounts, Tx
 └── .github/workflows/  # CI/CD pipelines
 ```
 
@@ -57,6 +59,16 @@ npm install
 npm run dev
 ```
 - Web App: `http://localhost:3002`
+
+### 3. App Móvil Unificada (iOS + Android con Expo CNG)
+
+```bash
+cd mobile
+./build.sh start      # Iniciar Metro Bundler
+./build.sh run-ios    # Compilar y correr en Simulador iOS
+./build.sh run-android# Compilar y correr en Android
+```
+
 
 ### 3. Pruebas Automatizadas
 
