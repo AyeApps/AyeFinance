@@ -92,7 +92,7 @@ export const SidebarDrawer: React.FC<SidebarDrawerProps> = ({ currentScreen, onN
       <View style={styles.modalRoot}>
         {/* Backdrop Overlay */}
         <TouchableOpacity
-          style={[styles.backdrop, { backgroundColor: colors.bgInvert + '55' }]}
+          style={[styles.backdrop, { backgroundColor: 'rgba(0, 0, 0, 0.75)' }]}
           activeOpacity={1}
           onPress={closeSidebar}
         />

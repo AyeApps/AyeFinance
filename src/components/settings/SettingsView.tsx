@@ -10,7 +10,9 @@ import {
   TouchableOpacity,
   View,
   useWindowDimensions,
+  StatusBar,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ArrowLeft,
   Shield,
@@ -148,6 +150,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onBack }) => {
     setIsEditingAccount(false);
   };
 
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
+  const bottomInset = insets.bottom;
+
   return (
     <View style={[styles.container, { backgroundColor: 'transparent' }]}>
       {/* Settings Header Bar with Back Button */}
@@ -158,6 +164,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onBack }) => {
             backgroundColor: colors.bgBase,
             borderBottomColor: colors.borderColor,
             borderBottomWidth: 2,
+            paddingTop: topInset,
+            height: (isMobile ? 60 : 70) + topInset,
           },
           isMobile && styles.headerBarMobile,
         ]}
@@ -198,7 +206,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onBack }) => {
         contentContainerStyle={[
           styles.scrollContent,
           isMobile && styles.scrollContentMobile,
-          { paddingBottom: 120 },
+          { paddingBottom: bottomInset + 80 },
         ]}
         showsVerticalScrollIndicator={false}
       >

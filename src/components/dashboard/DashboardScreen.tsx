@@ -76,9 +76,17 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate, on
   };
 
   // Safe dock height: dock (~56px) + gap (12px) + home indicator
-  const safeBottom = Platform.OS === 'web'
-    ? isDesktop ? 94 : 84
-    : Math.max(insets.bottom, 8) + 80;
+  const dockBottomOffset = Platform.OS === 'web'
+    ? 24
+    : Math.max(insets.bottom, 12) + (isDesktop ? 16 : 8);
+
+  const actionBtnBottomOffset = Platform.OS === 'web'
+    ? (isDesktop ? 94 : 84)
+    : dockBottomOffset + (isDesktop ? 56 : 52);
+
+  const scrollPaddingBottom = isDesktop
+    ? actionBtnBottomOffset + 70
+    : dockBottomOffset + 80;
 
   return (
     <View style={[styles.container, { backgroundColor: 'transparent' }]}>
@@ -86,7 +94,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate, on
         style={styles.content}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: isDesktop ? 160 : 140 },
+          { paddingBottom: scrollPaddingBottom },
         ]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />
@@ -401,13 +409,13 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate, on
         )}
       </ScrollView>
 
-      {/* Floating Action CTA: Docked right above the floating navigation dock */}
-      {!isLoading && (
+      {/* Desktop Floating Action CTA: Docked right above the floating navigation dock */}
+      {isDesktop && !isLoading && (
         <View
           pointerEvents="box-none"
           style={[
             styles.floatingActionRoot,
-            { bottom: safeBottom },
+            { bottom: actionBtnBottomOffset },
           ]}
         >
           <TouchableOpacity
@@ -417,7 +425,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate, on
                 backgroundColor: colors.accent,
                 borderColor: colors.borderColor,
                 shadowColor: colors.shadowColor,
-                maxWidth: isDesktop ? 520 : '94%',
+                maxWidth: 520,
                 ...(Platform.OS === 'web' ? { boxShadow: `5px 5px 0px 0px ${colors.shadowColor}` } : {}),
               },
             ]}

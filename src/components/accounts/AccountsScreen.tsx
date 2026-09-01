@@ -11,7 +11,9 @@ import {
   TouchableOpacity,
   View,
   useWindowDimensions,
+  StatusBar,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft, Plus, Trash2, Landmark, PiggyBank, LineChart, X } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { api } from '../../services/api';
@@ -82,6 +84,10 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
     }
   };
 
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
+  const bottomInset = insets.bottom;
+
   return (
     <View style={[styles.container, { backgroundColor: 'transparent' }]}>
       {/* Sub Header */}
@@ -91,6 +97,8 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
           {
             backgroundColor: colors.bgBase,
             borderBottomColor: colors.borderColor,
+            paddingTop: topInset,
+            height: (isMobile ? 56 : 64) + topInset,
           },
           isMobile && styles.headerMobile,
         ]}
@@ -143,7 +151,7 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
 
       <ScrollView
         style={styles.content}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: isMobile ? 100 : 120 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(bottomInset, 12) + 120 }]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

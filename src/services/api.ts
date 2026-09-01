@@ -149,7 +149,13 @@ export const api = {
       },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error('Error al crear cuenta');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const msg = Array.isArray(err.detail)
+        ? err.detail.map((e: any) => e.msg).join(', ')
+        : err.detail || 'Error al crear cuenta';
+      throw new Error(msg);
+    }
     return res.json();
   },
 
@@ -159,7 +165,10 @@ export const api = {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (!res.ok) throw new Error('Error al eliminar cuenta');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al eliminar cuenta');
+    }
   },
 
   async getTransactions(page = 1, limit = 20): Promise<PaginatedResponse<Transaction>> {
@@ -181,7 +190,13 @@ export const api = {
       },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error('Error al registrar movimiento');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const msg = Array.isArray(err.detail)
+        ? err.detail.map((e: any) => e.msg).join(', ')
+        : err.detail || 'Error al registrar movimiento';
+      throw new Error(msg);
+    }
     return res.json();
   },
 

@@ -7,7 +7,11 @@ import {
   StyleSheet,
   Platform,
 } from 'react-native';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import {
+  SafeAreaProvider,
+  initialWindowMetrics,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { useAuthStore } from './src/store/useAuthStore';
 import { useThemeStore } from './src/hooks/useTheme';
 import { useLanguageStore } from './src/store/useLanguageStore';
@@ -23,7 +27,7 @@ import { FinanceFloatingDock } from './src/components/navigation/FinanceFloating
 import { SidebarDrawer } from './src/components/navigation/SidebarDrawer';
 import { QuickAddModal } from './src/components/transactions/QuickAddModal';
 
-export default function App() {
+function MainApp() {
   const isInitializing = useAuthStore((state) => state.isInitializing);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const initAuth = useAuthStore((state) => state.initAuth);
@@ -32,6 +36,10 @@ export default function App() {
   const isDark = useThemeStore((state) => state.isDark);
   const colors = useThemeStore((state) => state.colors);
   const loadSavedLanguage = useLanguageStore((state) => state.loadSavedLanguage);
+
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
+  const bottomInset = insets.bottom;
 
   const [currentScreen, setCurrentScreen] = useState('dashboard');
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
@@ -97,7 +105,8 @@ export default function App() {
 
   if (isInitializing) {
     return (
-      <View style={[styles.center, { backgroundColor: colors.bgBase }]}>
+      <View style={[styles.center, { backgroundColor: colors.bgBase, paddingTop: topInset, paddingBottom: bottomInset }]}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
         <ActivityIndicator size="large" color={colors.accent} />
         <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
           [ INITIALIZING AYEFINANCE ENGINE... ]
@@ -109,8 +118,8 @@ export default function App() {
   if (!isAuthenticated) {
     return (
       <View style={[styles.container, { backgroundColor: colors.bgBase }]}>
-        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.bgBase} />
-        {/* Background Animated Matrix Grid Canvas */}
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
+        {/* Edge-to-Edge Background Animated Matrix Grid Canvas */}
         <AnimatedDotBackground />
         <AuthScreen />
       </View>
@@ -139,49 +148,56 @@ export default function App() {
   };
 
   return (
-    <SafeAreaProvider>
-      <SafeAreaView
-        style={[styles.container, { backgroundColor: colors.bgBase }]}
-        edges={['top', 'left', 'right']}
-      >
-        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.bgBase} translucent={false} />
+    <View style={[styles.container, { backgroundColor: colors.bgBase }]}>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor="transparent"
+        translucent
+      />
 
-        {/* Edge-to-Edge Animated Cyber Dot Matrix */}
-        <AnimatedDotBackground />
+      {/* Edge-to-Edge Animated Cyber Dot Matrix */}
+      <AnimatedDotBackground />
 
-        {/* Top Precision Atelier Header */}
-        <FinanceHeader
-          onRefresh={() => setRefreshKey((prev) => prev + 1)}
-          onNavigate={(screen) => setCurrentScreen(screen)}
-        />
+      {/* Top Precision Atelier Header */}
+      <FinanceHeader
+        onRefresh={() => setRefreshKey((prev) => prev + 1)}
+        onNavigate={(screen) => setCurrentScreen(screen)}
+      />
 
-        {/* Main Screen Content */}
-        <View style={styles.mainContentArea}>
-          {renderCurrentScreen()}
-        </View>
+      {/* Main Screen Content */}
+      <View style={styles.mainContentArea}>
+        {renderCurrentScreen()}
+      </View>
 
-        {/* Bottom Floating Command Dock (Hidden in Settings) */}
-        {currentScreen !== 'settings' && (
-          <FinanceFloatingDock
-            currentScreen={currentScreen}
-            onNavigate={(screen) => setCurrentScreen(screen)}
-            onOpenQuickAdd={() => setIsQuickAddOpen(true)}
-          />
-        )}
-
-        {/* Quick Add Transaction Modal */}
-        <QuickAddModal
-          isOpen={isQuickAddOpen}
-          onClose={() => setIsQuickAddOpen(false)}
-          onSuccess={() => setRefreshKey((prev) => prev + 1)}
-        />
-
-        {/* Left-anchored Cyber Navigation & Settings Drawer */}
-        <SidebarDrawer
+      {/* Bottom Floating Command Dock (Hidden in Settings) */}
+      {currentScreen !== 'settings' && (
+        <FinanceFloatingDock
           currentScreen={currentScreen}
           onNavigate={(screen) => setCurrentScreen(screen)}
+          onOpenQuickAdd={() => setIsQuickAddOpen(true)}
         />
-      </SafeAreaView>
+      )}
+
+      {/* Quick Add Transaction Modal */}
+      <QuickAddModal
+        isOpen={isQuickAddOpen}
+        onClose={() => setIsQuickAddOpen(false)}
+        onSuccess={() => setRefreshKey((prev) => prev + 1)}
+      />
+
+      {/* Left-anchored Cyber Navigation & Settings Drawer */}
+      <SidebarDrawer
+        currentScreen={currentScreen}
+        onNavigate={(screen) => setCurrentScreen(screen)}
+      />
+    </View>
+  );
+}
+
+export default function App() {
+  return (
+    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+      <MainApp />
     </SafeAreaProvider>
   );
 }

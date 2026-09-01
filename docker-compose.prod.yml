@@ -11,9 +11,12 @@ services:
       - APP_NAME=AyeFinance
       - APP_ENV=production
       - PORT=8000
-      - MONGODB_URL=mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongodb:27017/aye_finance_prod?authSource=admin
+      - MONGODB_URL=${MONGODB_URL:-mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongodb:27017/aye_finance_prod?authSource=admin}
+      - DATABASE_NAME=${DATABASE_NAME:-aye_finance_prod}
+      - MONGODB_CERT_B64=${MONGODB_CERT_B64:-}
+      - MONGODB_CERT_PATH=${MONGODB_CERT_PATH:-}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-      - CORS_ORIGINS=["https://finance.ayeapps.com"]
+      - CORS_ORIGINS=${CORS_ORIGINS:-["https://finance.ayeapps.com"]}
     networks:
       - aye_prod_net
 

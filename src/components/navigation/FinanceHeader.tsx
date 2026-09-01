@@ -6,7 +6,9 @@ import {
   View,
   useWindowDimensions,
   Platform,
+  StatusBar,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Menu,
   Sun,
@@ -62,6 +64,9 @@ export const FinanceHeader: React.FC<FinanceHeaderProps> = ({
     }
   };
 
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
+
   return (
     <View
       style={[
@@ -69,6 +74,7 @@ export const FinanceHeader: React.FC<FinanceHeaderProps> = ({
         {
           backgroundColor: colors.bgBase,
           borderBottomColor: colors.borderColor,
+          paddingTop: topInset,
         },
       ]}
     >

@@ -8,7 +8,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LayoutDashboard, Landmark, Receipt, CalendarClock } from 'lucide-react-native';
+import { LayoutDashboard, Landmark, Receipt, CalendarClock, Plus } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 
 interface FinanceFloatingDockProps {
@@ -20,6 +20,7 @@ interface FinanceFloatingDockProps {
 export const FinanceFloatingDock: React.FC<FinanceFloatingDockProps> = ({
   currentScreen,
   onNavigate,
+  onOpenQuickAdd,
 }) => {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
@@ -38,7 +39,7 @@ export const FinanceFloatingDock: React.FC<FinanceFloatingDockProps> = ({
   // Safe bottom offset: respects home indicator on iPhone and Android nav bar
   const safeBottom = Platform.OS === 'web'
     ? 24
-    : Math.max(insets.bottom, 8) + 12;
+    : Math.max(insets.bottom, 12) + (isMobile ? 8 : 16);
 
   return (
     <View
@@ -67,40 +68,133 @@ export const FinanceFloatingDock: React.FC<FinanceFloatingDockProps> = ({
           },
         ]}
       >
-        {NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const isActive = currentScreen === item.id;
-          return (
+        {isMobile ? (
+          <>
+            {/* Left 2 Items: Resumen & Cuentas */}
+            {NAV_ITEMS.slice(0, 2).map((item) => {
+              const Icon = item.icon;
+              const isActive = currentScreen === item.id;
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  style={[
+                    styles.navBtn,
+                    styles.navBtnMobile,
+                    isActive && {
+                      backgroundColor: colors.textPrimary,
+                    },
+                  ]}
+                  onPress={() => onNavigate(item.id)}
+                  activeOpacity={0.8}
+                  accessibilityLabel={item.label}
+                >
+                  <Icon
+                    size={15}
+                    color={isActive ? colors.bgBase : colors.textPrimary}
+                    strokeWidth={2.5}
+                  />
+                  <Text
+                    style={[
+                      styles.navBtnText,
+                      styles.navBtnTextMobile,
+                      { color: isActive ? colors.bgBase : colors.textPrimary },
+                    ]}
+                  >
+                    {isSmallMobile ? item.shortLabel : item.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+
+            {/* Center + Action Button on Mobile */}
             <TouchableOpacity
-              key={item.id}
               style={[
-                styles.navBtn,
-                isMobile && styles.navBtnMobile,
-                isActive && {
-                  backgroundColor: colors.textPrimary,
+                styles.heroActionBtnMobile,
+                {
+                  backgroundColor: colors.accent,
+                  borderColor: colors.borderColor,
+                  shadowColor: colors.shadowColor,
+                  ...(Platform.OS === 'web' ? { boxShadow: `3px 3px 0px 0px ${colors.shadowColor}` } : {}),
                 },
               ]}
-              onPress={() => onNavigate(item.id)}
+              onPress={onOpenQuickAdd}
               activeOpacity={0.8}
-              accessibilityLabel={item.label}
+              accessibilityLabel="Registrar nuevo movimiento"
             >
-              <Icon
-                size={isMobile ? 15 : 16}
-                color={isActive ? colors.bgBase : colors.textPrimary}
-                strokeWidth={2.5}
-              />
-              <Text
-                style={[
-                  styles.navBtnText,
-                  isMobile && styles.navBtnTextMobile,
-                  { color: isActive ? colors.bgBase : colors.textPrimary },
-                ]}
-              >
-                {isSmallMobile ? item.shortLabel : item.label}
-              </Text>
+              <Plus size={20} color="#000000" strokeWidth={3} />
             </TouchableOpacity>
-          );
-        })}
+
+            {/* Right 2 Items: Libro & Fijos */}
+            {NAV_ITEMS.slice(2, 4).map((item) => {
+              const Icon = item.icon;
+              const isActive = currentScreen === item.id;
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  style={[
+                    styles.navBtn,
+                    styles.navBtnMobile,
+                    isActive && {
+                      backgroundColor: colors.textPrimary,
+                    },
+                  ]}
+                  onPress={() => onNavigate(item.id)}
+                  activeOpacity={0.8}
+                  accessibilityLabel={item.label}
+                >
+                  <Icon
+                    size={15}
+                    color={isActive ? colors.bgBase : colors.textPrimary}
+                    strokeWidth={2.5}
+                  />
+                  <Text
+                    style={[
+                      styles.navBtnText,
+                      styles.navBtnTextMobile,
+                      { color: isActive ? colors.bgBase : colors.textPrimary },
+                    ]}
+                  >
+                    {isSmallMobile ? item.shortLabel : item.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </>
+        ) : (
+          /* Desktop Layout: 4 Full Items */
+          NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const isActive = currentScreen === item.id;
+            return (
+              <TouchableOpacity
+                key={item.id}
+                style={[
+                  styles.navBtn,
+                  isActive && {
+                    backgroundColor: colors.textPrimary,
+                  },
+                ]}
+                onPress={() => onNavigate(item.id)}
+                activeOpacity={0.8}
+                accessibilityLabel={item.label}
+              >
+                <Icon
+                  size={16}
+                  color={isActive ? colors.bgBase : colors.textPrimary}
+                  strokeWidth={2.5}
+                />
+                <Text
+                  style={[
+                    styles.navBtnText,
+                    { color: isActive ? colors.bgBase : colors.textPrimary },
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })
+        )}
       </View>
     </View>
   );
@@ -159,5 +253,16 @@ const styles = StyleSheet.create({
   navBtnTextMobile: {
     fontSize: 9.5,
     letterSpacing: 0.4,
+  },
+  heroActionBtnMobile: {
+    width: 42,
+    height: 42,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    marginHorizontal: 2,
   },
 });

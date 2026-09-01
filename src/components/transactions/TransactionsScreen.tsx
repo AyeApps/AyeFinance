@@ -11,8 +11,10 @@ import {
   TouchableOpacity,
   View,
   useWindowDimensions,
+  StatusBar,
 } from 'react-native';
-import { ArrowLeft, Plus, Trash2, Receipt, ArrowDownLeft, ArrowUpRight, ArrowLeftRight, X } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ArrowLeft, Plus, Trash2, Receipt, ArrowDownLeft, ArrowUpRight, ArrowLeftRight, X, Landmark, Check, AlertCircle } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { api } from '../../services/api';
 import { Account, Transaction, TransactionType } from '../../types';
@@ -62,8 +64,45 @@ export const TransactionsScreen: React.FC<{ onBack: () => void }> = ({ onBack })
     loadData();
   }, [loadData]);
 
+  const [isCreatingDefaultAccount, setIsCreatingDefaultAccount] = useState(false);
+  const [createError, setCreateError] = useState('');
+
+  const handleQuickCreateDefaultAccount = async () => {
+    setIsCreatingDefaultAccount(true);
+    setCreateError('');
+    try {
+      const created = await api.createAccount({
+        name: 'Billetera Principal',
+        account_type: 'corriente',
+        currency: 'MXN',
+        initial_balance: 0,
+        is_liquid: true,
+        color: '#FE9D01',
+      });
+      const accs = await api.getAccounts();
+      setAccounts(accs);
+      setSelectedAccountId(created.id || (accs.length > 0 ? accs[0].id : ''));
+    } catch (err: any) {
+      setCreateError(err.message?.toUpperCase() || 'ERROR AL CREAR CUENTA RÁPIDA');
+    } finally {
+      setIsCreatingDefaultAccount(false);
+    }
+  };
+
   const handleCreate = async () => {
-    if (!amount.trim() || !concept.trim() || !selectedAccountId) return;
+    if (!amount.trim()) {
+      setCreateError('INGRESA UN MONTO VÁLIDO MAYOR A 0');
+      return;
+    }
+    if (!concept.trim()) {
+      setCreateError('INGRESA UN CONCEPTO O DESCRIPCIÓN');
+      return;
+    }
+    if (!selectedAccountId) {
+      setCreateError('SELECCIONA O CREA UNA CUENTA DE ORIGEN');
+      return;
+    }
+    setCreateError('');
     setIsSubmitting(true);
     try {
       await api.createTransaction({
@@ -78,7 +117,7 @@ export const TransactionsScreen: React.FC<{ onBack: () => void }> = ({ onBack })
       setConcept('');
       loadData();
     } catch (err: any) {
-      alert(err.message || 'Error al registrar movimiento');
+      setCreateError(err.message?.toUpperCase() || 'ERROR AL REGISTRAR MOVIMIENTO');
     } finally {
       setIsSubmitting(false);
     }
@@ -98,6 +137,10 @@ export const TransactionsScreen: React.FC<{ onBack: () => void }> = ({ onBack })
     return tx.type === filterType;
   });
 
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
+  const bottomInset = insets.bottom;
+
   return (
     <View style={[styles.container, { backgroundColor: 'transparent' }]}>
       {/* Sub Header */}
@@ -107,6 +150,8 @@ export const TransactionsScreen: React.FC<{ onBack: () => void }> = ({ onBack })
           {
             backgroundColor: colors.bgBase,
             borderBottomColor: colors.borderColor,
+            paddingTop: topInset,
+            height: (isMobile ? 56 : 64) + topInset,
           },
           isMobile && styles.headerMobile,
         ]}
@@ -159,7 +204,7 @@ export const TransactionsScreen: React.FC<{ onBack: () => void }> = ({ onBack })
 
       <ScrollView
         style={styles.content}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: isMobile ? 100 : 120 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(bottomInset, 12) + 120 }]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -471,6 +516,111 @@ export const TransactionsScreen: React.FC<{ onBack: () => void }> = ({ onBack })
                 </ScrollView>
               </View>
 
+              {/* Account Selector Section */}
+              <View style={styles.formGroup}>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>CUENTA DE ORIGEN / FONDOS *</Text>
+                {accounts.length === 0 ? (
+                  <View style={[styles.noAccountsCard, { borderColor: colors.borderColor, backgroundColor: colors.bgBase }]}>
+                    <View style={styles.noAccountsTop}>
+                      <AlertCircle size={15} color={colors.accent} strokeWidth={2.5} />
+                      <Text style={[styles.noAccountsText, { color: colors.textPrimary }]}>
+                        NO TIENES CUENTAS CONFIGURADAS AÚN
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={[
+                        styles.quickCreateAccountBtn,
+                        {
+                          backgroundColor: colors.accent,
+                          borderColor: colors.borderColor,
+                          shadowColor: colors.shadowColor,
+                          ...(Platform.OS === 'web' ? { boxShadow: `3px 3px 0px 0px ${colors.shadowColor}` } : {}),
+                        },
+                      ]}
+                      onPress={handleQuickCreateDefaultAccount}
+                      disabled={isCreatingDefaultAccount}
+                      activeOpacity={0.8}
+                    >
+                      {isCreatingDefaultAccount ? (
+                        <ActivityIndicator size="small" color="#000000" />
+                      ) : (
+                        <>
+                          <Plus size={14} color="#000000" strokeWidth={3} />
+                          <Text style={styles.quickCreateAccountBtnText}>
+                            CREAR "BILLETERA PRINCIPAL" (1-CLIC)
+                          </Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={styles.accountPillsRow}>
+                    {accounts.map((acc) => {
+                      const isSelected = selectedAccountId === acc.id;
+                      return (
+                        <TouchableOpacity
+                          key={acc.id}
+                          style={[
+                            styles.accountPill,
+                            {
+                              borderColor: isSelected ? colors.borderColor : colors.borderMuted,
+                              backgroundColor: isSelected ? colors.accent : colors.bgBase,
+                              shadowColor: colors.shadowColor,
+                              ...(Platform.OS === 'web' && isSelected
+                                ? { boxShadow: `3px 3px 0px 0px ${colors.shadowColor}` }
+                                : {}),
+                            },
+                          ]}
+                          onPress={() => setSelectedAccountId(acc.id)}
+                          activeOpacity={0.8}
+                        >
+                          <Landmark
+                            size={13}
+                            color={isSelected ? '#000000' : colors.accent}
+                            strokeWidth={2.5}
+                          />
+                          <Text
+                            style={[
+                              styles.accountPillText,
+                              { color: isSelected ? '#000000' : colors.textPrimary },
+                            ]}
+                          >
+                            {acc.name.toUpperCase()}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.accountPillBalance,
+                              { color: isSelected ? '#000000' : colors.textSecondary },
+                            ]}
+                          >
+                            (${acc.current_balance})
+                          </Text>
+                          {isSelected && <Check size={13} color="#000000" strokeWidth={3} />}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
+
+              {/* Error Alert */}
+              {createError ? (
+                <View
+                  style={[
+                    styles.errorBox,
+                    {
+                      borderColor: colors.accentDanger,
+                      backgroundColor: colors.accentDangerSubtle,
+                    },
+                  ]}
+                >
+                  <AlertCircle size={15} color={colors.accentDanger} strokeWidth={2.5} />
+                  <Text style={[styles.errorText, { color: colors.accentDanger }]}>
+                    {createError}
+                  </Text>
+                </View>
+              ) : null}
+
               <TouchableOpacity
                 onPress={handleCreate}
                 disabled={isSubmitting}
@@ -714,7 +864,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.75)',
+    backgroundColor: 'rgba(0,0,0,0.82)',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
@@ -807,6 +957,76 @@ const styles = StyleSheet.create({
   categoryChipText: {
     fontSize: 9.5,
     fontWeight: '900',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+  },
+  noAccountsCard: {
+    borderWidth: 2,
+    padding: 12,
+    gap: 8,
+  },
+  noAccountsTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  noAccountsText: {
+    fontSize: 9.5,
+    fontWeight: '900',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    letterSpacing: 0.6,
+  },
+  quickCreateAccountBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 2,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  quickCreateAccountBtnText: {
+    fontSize: 10,
+    fontWeight: '900',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    color: '#000000',
+    letterSpacing: 0.6,
+  },
+  accountPillsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  accountPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1.5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  accountPillText: {
+    fontSize: 10,
+    fontWeight: '900',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    letterSpacing: 0.5,
+  },
+  accountPillBalance: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+  },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1.5,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 10,
+  },
+  errorText: {
+    fontSize: 10,
+    fontWeight: '800',
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   submitBtn: {

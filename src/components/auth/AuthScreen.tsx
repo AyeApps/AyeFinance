@@ -9,7 +9,9 @@ import {
   TouchableOpacity,
   View,
   useWindowDimensions,
+  StatusBar,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Sun, Moon, Languages, AlertCircle, UserPlus } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -279,10 +281,14 @@ export const AuthScreen: React.FC = () => {
     }
   };
 
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
+  const bottomInset = insets.bottom;
+
   return (
-    <View style={[styles.appContainer, { backgroundColor: 'transparent' }]}>
+    <View style={[styles.appContainer, { backgroundColor: 'transparent', paddingBottom: bottomInset + 16 }]}>
       {/* Top Right Controls: Language Switcher & Theme Toggle */}
-      <View style={styles.topRightControls}>
+      <View style={[styles.topRightControls, { top: Math.max(topInset, 16) + 8 }]}>
         <TouchableOpacity
           style={[
             styles.themeToggleTop,

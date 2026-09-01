@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     # Database
     MONGODB_URL: str = "mongodb://localhost:27017/aye_finance_dev"
     DB_NAME: str = "aye_finance_dev"
+    DATABASE_NAME: str = "aye_finance_dev"
+    MONGODB_CERT_B64: str = ""
+    MONGODB_CERT_PATH: str = ""
 
     # Security
     JWT_SECRET_KEY: str = "super_secure_secret_key_minimum_32_characters_for_ayeapps_atelier"
