@@ -1,0 +1,445 @@
+/* ─── Exact 1-to-1 Clone of AyeTasks Neo-Brutalist Cyber Design System ─── */
+
+@keyframes gridMove {
+  0% {
+    background-position: 0px 0px;
+  }
+  100% {
+    background-position: 32px 32px;
+  }
+}
+
+.ayetasks-auth-root {
+  min-height: 100vh;
+  width: 100vw;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  transition: background-color 0.2s ease;
+}
+
+.ayetasks-auth-root.dark {
+  background-color: #000000;
+  color: #ffffff;
+  --bg-base: #000000;
+  --bg-surface: #101010;
+  --border-color: #ffffff;
+  --text-primary: #ffffff;
+  --text-invert: #000000;
+  --text-muted: #666666;
+  --accent-color: #FE9D01;
+  --accent-success: #00e676;
+  --shadow-color: #ffffff;
+  --grid-dot-color: rgba(255, 255, 255, 0.18);
+  --apple-btn-bg: #FFFFFF;
+  --apple-btn-text: #000000;
+  --apple-btn-border: #FFFFFF;
+}
+
+.ayetasks-auth-root.light {
+  background-color: #ffffff;
+  color: #000000;
+  --bg-base: #ffffff;
+  --bg-surface: #eeeeee;
+  --border-color: #000000;
+  --text-primary: #000000;
+  --text-invert: #ffffff;
+  --text-muted: #888888;
+  --accent-color: #E68A00;
+  --accent-success: #00c853;
+  --shadow-color: #000000;
+  --grid-dot-color: rgba(0, 0, 0, 0.14);
+  --apple-btn-bg: #000000;
+  --apple-btn-text: #ffffff;
+  --apple-btn-border: #000000;
+}
+
+/* Moving Animated Dot Grid (Exact replica of AyeTasks AnimatedDotBackground) */
+.ayetasks-dot-grid-animated {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(var(--grid-dot-color) 1.5px, transparent 1.5px);
+  background-size: 32px 32px;
+  background-position: center;
+  animation: gridMove 5s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Top Right Controls */
+.ayetasks-top-controls {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 100;
+}
+
+.ayetasks-control-btn {
+  height: 44px;
+  border: 2px solid var(--border-color);
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 3px 3px 0px 0px var(--shadow-color);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  border-radius: 0;
+}
+
+.ayetasks-control-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px 0px var(--shadow-color);
+}
+
+.ayetasks-theme-btn {
+  width: 44px;
+}
+
+.ayetasks-lang-btn {
+  padding: 0 12px;
+  gap: 6px;
+}
+
+.ayetasks-lang-text {
+  font-size: 12px;
+  font-weight: 900;
+  font-family: Courier, monospace;
+  letter-spacing: 0.8px;
+}
+
+/* Centered View */
+.ayetasks-centered-view {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  position: relative;
+  z-index: 10;
+}
+
+/* Tech Frame Box */
+.ayetasks-tech-frame {
+  width: 100%;
+  max-width: 480px;
+  border: 2px solid var(--border-color);
+  background-color: var(--bg-base);
+  position: relative;
+  padding-top: 52px;
+  box-shadow: 12px 12px 0px 0px var(--shadow-color);
+  border-radius: 0;
+}
+
+@media (max-width: 600px) {
+  .ayetasks-tech-frame {
+    max-width: 100%;
+    padding-top: 44px;
+  }
+}
+
+/* Pinned Tech Badge (Top Left of Card overlapping border) */
+.ayetasks-tech-badge {
+  position: absolute;
+  top: -14px;
+  left: 24px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 12px;
+  background-color: var(--bg-base);
+  border: 2px solid var(--accent-success);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.ayetasks-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 3.5px;
+  background-color: var(--accent-success);
+}
+
+.ayetasks-status-dot.offline {
+  background-color: #ff1744;
+}
+
+.ayetasks-status-dot.checking {
+  background-color: #FFD600;
+}
+
+.ayetasks-tech-badge-text {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--accent-success);
+  font-family: Courier, monospace;
+}
+
+/* Frame Content */
+.ayetasks-tech-frame-content {
+  padding: 0 32px 36px 32px;
+}
+
+@media (max-width: 480px) {
+  .ayetasks-tech-frame-content {
+    padding: 0 20px 24px 20px;
+  }
+}
+
+/* Title Section */
+.ayetasks-title-section {
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.ayetasks-auth-logo-box {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.ayetasks-hero-title {
+  font-size: 36px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin: 0;
+  color: var(--text-primary);
+  line-height: 1.1;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Segmented Selector Tabs */
+.ayetasks-segmented-selector {
+  display: flex;
+  border: 2px solid var(--border-color);
+  background-color: var(--bg-surface);
+  margin-bottom: 24px;
+  border-radius: 0;
+}
+
+.ayetasks-tab-button {
+  flex: 1;
+  padding: 14px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border-radius: 0;
+}
+
+.ayetasks-tab-button.active {
+  background-color: var(--text-primary);
+}
+
+.ayetasks-tab-button-text {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.ayetasks-tab-button.active .ayetasks-tab-button-text {
+  color: var(--text-invert);
+}
+
+/* Form Container */
+.ayetasks-form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Inputs with Courier font */
+.ayetasks-geometric-input {
+  width: 100%;
+  border: 2px solid var(--border-color);
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  padding: 16px 18px;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: Courier, monospace;
+  outline: none;
+  min-height: 52px;
+  border-radius: 0;
+  box-sizing: border-box;
+}
+
+.ayetasks-geometric-input::placeholder {
+  color: var(--text-muted);
+}
+
+.ayetasks-geometric-input:focus {
+  border-color: var(--accent-color);
+}
+
+/* Hero Amber Button */
+.ayetasks-hero-btn {
+  width: 100%;
+  border: 2px solid var(--border-color);
+  background-color: var(--accent-color);
+  color: #000000;
+  padding: 16px 20px;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  box-shadow: 4px 4px 0px 0px var(--shadow-color);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  border-radius: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.ayetasks-hero-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px 0px var(--shadow-color);
+}
+
+.ayetasks-hero-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Divider */
+.ayetasks-divider-row {
+  display: flex;
+  align-items: center;
+  margin: 12px 0;
+}
+
+.ayetasks-divider-line {
+  flex: 1;
+  height: 1px;
+  background-color: var(--border-color);
+  opacity: 0.4;
+}
+
+.ayetasks-divider-text {
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: var(--text-muted);
+  font-family: Courier, monospace;
+}
+
+/* Social Login Buttons */
+.ayetasks-social-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ayetasks-social-btn {
+  width: 100%;
+  min-height: 50px;
+  border: 2px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  cursor: pointer;
+  box-shadow: 3px 3px 0px 0px var(--shadow-color);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  border-radius: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.ayetasks-social-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px 0px var(--shadow-color);
+}
+
+.ayetasks-social-btn.google-btn {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+}
+
+.ayetasks-social-btn.apple-btn {
+  background-color: var(--apple-btn-bg);
+  border-color: var(--apple-btn-border);
+  color: var(--apple-btn-text);
+}
+
+/* Alert Boxes */
+.ayetasks-error-alert-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1.5px solid #ff1744;
+  background-color: rgba(255, 23, 68, 0.12);
+  color: #ff1744;
+  padding: 12px 14px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  font-family: Courier, monospace;
+}
+
+.ayetasks-suggest-register-box {
+  border: 1.5px solid var(--accent-color);
+  background-color: rgba(254, 157, 1, 0.08);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.ayetasks-suggest-title {
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  color: var(--accent-color);
+  font-family: Courier, monospace;
+}
+
+.ayetasks-suggest-desc {
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--text-primary);
+  font-family: Courier, monospace;
+}
+
+.ayetasks-suggest-btn {
+  border: 1.5px solid var(--accent-color);
+  background-color: var(--bg-base);
+  color: var(--accent-color);
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  cursor: pointer;
+  box-shadow: 2px 2px 0px 0px var(--accent-color);
+  font-family: Courier, monospace;
+}
+
+.font-mono {
+  font-family: Courier, monospace !important;
+}

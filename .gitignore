@@ -2,7 +2,7 @@
 #  AyeFinance Monorepo .gitignore
 # ─────────────────────────────────────────────────────────────
 
-# OS & Editor files
+# ── OS & Editor ──────────────────────────────────────────────
 .DS_Store
 .DS_Store?
 ._*
@@ -15,25 +15,26 @@ Thumbs.db
 *.swp
 *.swo
 
-# Environment Variables & Secrets (CRITICAL)
+# ── Environment Variables & Secrets (CRITICAL) ───────────────
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+backend/.env
+backend/.env.*
+!backend/.env.example
 *.pem
 *.key
 *.cert
 
-# Python & Backend (FastAPI / Beanie)
+# ── Python & Backend (FastAPI / Beanie) ──────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
@@ -60,11 +61,16 @@ htmlcov/
 .ruff_cache/
 .mypy_cache/
 
-# Node.js & Web App (Next.js 16 / React)
+# ── Node.js & Web App (Next.js) ──────────────────────────────
+node_modules/
 web/node_modules/
+legacy_web/node_modules/
 web/.next/
 web/out/
 web/build/
+legacy_web/.next/
+legacy_web/out/
+legacy_web/build/
 web/.npm
 web/.turbo
 npm-debug.log*
@@ -74,16 +80,13 @@ pnpm-debug.log*
 lerna-debug.log*
 next-env.d.ts
 
-# Mobile App (React Native / Expo CNG)
-mobile/node_modules/
-mobile/.expo/
-mobile/android/
-mobile/ios/
-mobile/*.log
+# ── Mobile App (Expo / React Native CNG) ─────────────────────
 .expo/
 .expo-shared/
-
-
-# Docker & Database Volumes
-mongo_data/
+android/
+ios/
+dist/
 *.log
+
+# ── Docker & Database Volumes ─────────────────────────────────
+mongo_data/

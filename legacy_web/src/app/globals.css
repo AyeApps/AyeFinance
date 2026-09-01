@@ -1,0 +1,281 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+:root {
+  /* Light Theme (Paper White / Atelier Light) */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f4f4f4;
+  --bg-surface: #eeeeee;
+  --bg-card: #ffffff;
+  --bg-card-hover: #fcfcfc;
+  --bg-invert: #000000;
+
+  --border-color: #000000;
+  --border-muted: rgba(0, 0, 0, 0.10);
+  --border-strong: rgba(0, 0, 0, 0.22);
+  --border-accent: #E68A00;
+
+  --text-primary: #0a0a0a;
+  --text-secondary: #555555;
+  --text-muted: #888888;
+  --text-invert: #ffffff;
+
+  /* Cyber-Amber Accent Light */
+  --accent-amber: #E68A00;
+  --accent-amber-hover: #D47D00;
+  --accent-amber-subtle: rgba(230, 138, 0, 0.10);
+  --accent-amber-border: rgba(230, 138, 0, 0.40);
+  --accent-amber-glow: rgba(230, 138, 0, 0.25);
+
+  /* Semantic Colors Light */
+  --accent-success: #00c853;
+  --accent-success-hover: #00b248;
+  --accent-success-subtle: #e8f8ee;
+  --accent-success-border: rgba(0, 200, 83, 0.35);
+
+  --accent-danger: #d50000;
+  --accent-danger-subtle: #fee2e2;
+  --accent-danger-border: rgba(213, 0, 0, 0.35);
+
+  --accent-warning: #e65100;
+  --accent-warning-subtle: #fef3c7;
+  
+  --accent-info: #0284c7;
+  --accent-info-subtle: #e0f2fe;
+
+  --shadow-color: #000000;
+  --dot-color: rgba(0, 0, 0, 0.14);
+}
+
+[data-theme="dark"],
+.dark {
+  /* Dark Theme (Deep Obsidian / Atelier Cyber) */
+  --bg-primary: #000000;
+  --bg-secondary: #050505;
+  --bg-surface: #080808;
+  --bg-card: #080808;
+  --bg-card-hover: #101010;
+  --bg-invert: #ffffff;
+
+  --border-color: #ffffff;
+  --border-muted: rgba(255, 255, 255, 0.15);
+  --border-strong: rgba(255, 255, 255, 0.30);
+  --border-accent: #FE9D01;
+
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --text-muted: #888888;
+  --text-invert: #000000;
+
+  /* Cyber-Amber Accent Dark */
+  --accent-amber: #FE9D01;
+  --accent-amber-hover: #FFAF20;
+  --accent-amber-subtle: rgba(254, 157, 1, 0.12);
+  --accent-amber-border: rgba(254, 157, 1, 0.50);
+  --accent-amber-glow: rgba(254, 157, 1, 0.35);
+
+  /* Semantic Colors Dark */
+  --accent-success: #00e676;
+  --accent-success-hover: #00c853;
+  --accent-success-subtle: rgba(0, 230, 118, 0.12);
+  --accent-success-border: rgba(0, 230, 118, 0.40);
+
+  --accent-danger: #ff3b30;
+  --accent-danger-subtle: rgba(255, 59, 48, 0.12);
+  --accent-danger-border: rgba(255, 59, 48, 0.40);
+
+  --accent-warning: #FFAF20;
+  --accent-warning-subtle: rgba(254, 157, 1, 0.12);
+
+  --accent-info: #00b0ff;
+  --accent-info-subtle: rgba(0, 176, 255, 0.12);
+
+  --shadow-color: #ffffff;
+  --dot-color: rgba(255, 255, 255, 0.18);
+}
+
+@theme inline {
+  --color-base: var(--bg-primary);
+  --color-foreground: var(--text-primary);
+  --color-surface: var(--bg-secondary);
+  --color-surface-card: var(--bg-card);
+  --color-border-subtle: var(--border-muted);
+  --color-amber-cyber: var(--accent-amber);
+  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Monaco', 'Courier Prime', monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-amber) !important;
+  outline-offset: 3px !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   ATELIER SIGNATURE COMPONENTS & CRAFT (IMPECCABLE FINISH)
+   ───────────────────────────────────────────────────────────── */
+
+/* 1. Dot Pattern Background with GridMove Animation */
+.dot-pattern-animated {
+  background-image: radial-gradient(var(--dot-color) 1.5px, transparent 1.5px);
+  background-size: 32px 32px;
+  background-position: center;
+  animation: gridMove 5s linear infinite;
+  will-change: background-position;
+}
+
+@keyframes gridMove {
+  0%   { background-position: 0px 0px; }
+  100% { background-position: 32px 32px; }
+}
+
+/* 2. Geometric Badge */
+.geo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.2rem 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-muted);
+  color: var(--accent-amber);
+  position: relative;
+  transition: border-color 0.2s ease;
+}
+
+.geo-badge::before {
+  content: "";
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: var(--accent-amber);
+  box-shadow: 0 0 6px var(--accent-amber);
+}
+
+/* 3. Bracket Corners Frame */
+.bracket-corners {
+  position: relative;
+  --bracket-color: var(--accent-amber);
+}
+
+.bracket-corners::before,
+.bracket-corners::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+  z-index: 10;
+  transition: transform 250ms cubic-bezier(0.16, 1, 0.3, 1), border-color 200ms ease;
+}
+
+.bracket-corners::before {
+  top: -1px;
+  left: -1px;
+  border-top: 2px solid var(--bracket-color);
+  border-left: 2px solid var(--bracket-color);
+  transform-origin: top left;
+}
+
+.bracket-corners::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 2px solid var(--bracket-color);
+  border-right: 2px solid var(--bracket-color);
+  transform-origin: bottom right;
+}
+
+.bracket-corners:hover::before,
+.bracket-corners:hover::after {
+  transform: scale(1.3);
+}
+
+/* 4. Cyber Card Lift Micro-interaction */
+.card-lift {
+  transition: transform 220ms cubic-bezier(0.25, 1, 0.5, 1),
+              border-color 220ms ease,
+              box-shadow 220ms ease,
+              background-color 220ms ease;
+}
+
+.card-lift:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent-amber-border);
+  box-shadow: 0 12px 30px -10px var(--shadow-color), 0 0 15px -3px var(--accent-amber-subtle);
+}
+
+/* 5. Tactile Button Press Micro-interaction */
+.btn-press {
+  transition: transform 120ms cubic-bezier(0.25, 1, 0.5, 1),
+              background-color 160ms ease,
+              border-color 160ms ease,
+              box-shadow 160ms ease;
+  user-select: none;
+}
+
+.btn-press:active {
+  transform: scale(0.97);
+}
+
+/* 6. Live Telemetry Pulse Animation */
+@keyframes live-pulse {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  50% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.8; }
+}
+
+.telemetry-pulse {
+  animation: live-pulse 2s infinite ease-in-out;
+}
+
+/* 7. Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-muted);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-amber);
+}
+
+/* Reduced motion accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .dot-pattern-animated,
+  .card-lift:hover,
+  .bracket-corners::before,
+  .bracket-corners::after,
+  .telemetry-pulse {
+    animation: none !important;
+    transform: none !important;
+  }
+}
