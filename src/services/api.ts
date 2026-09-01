@@ -2,18 +2,20 @@ import { Platform } from 'react-native';
 import { authStorage } from './authStorage';
 import { Account, AccountSummary, PaginatedResponse, RecurringItem, Transaction, User } from '../types';
 
-export const getApiBaseUrl = () => {
-  if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:8003/api/v1';
+export const getApiBaseUrl = (): string => {
+  let url = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8003/api/v1';
+  if (Platform.OS === 'android' && url.includes('localhost')) {
+    url = url.replace('localhost', '10.0.2.2').replace('127.0.0.1', '10.0.2.2');
   }
-  return 'http://localhost:8003/api/v1';
+  return url;
 };
 
-export const getAuthApiBaseUrl = () => {
-  if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:8000/api/v1';
+export const getAuthApiBaseUrl = (): string => {
+  let url = process.env.EXPO_PUBLIC_AUTH_API_URL || 'http://localhost:8000/api/v1';
+  if (Platform.OS === 'android' && url.includes('localhost')) {
+    url = url.replace('localhost', '10.0.2.2').replace('127.0.0.1', '10.0.2.2');
   }
-  return 'http://localhost:8000/api/v1';
+  return url;
 };
 
 export const api = {
