@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: aye-finance-api-prod
+    restart: always
+    environment:
+      - APP_NAME=AyeFinance
+      - APP_ENV=production
+      - PORT=8000
+      - MONGODB_URL=mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongodb:27017/aye_finance_prod?authSource=admin
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - CORS_ORIGINS=["https://finance.ayeapps.com"]
+    networks:
+      - aye_prod_net
+
+networks:
+  aye_prod_net:
+    external: true

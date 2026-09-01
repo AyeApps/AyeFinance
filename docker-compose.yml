@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: aye-finance-api-dev
+    restart: unless-stopped
+    ports:
+      - "8003:8000"
+    environment:
+      - APP_NAME=AyeFinance
+      - APP_ENV=development
+      - PORT=8000
+      - MONGODB_URL=mongodb://mongodb:27017/aye_finance_dev
+      - JWT_SECRET_KEY=super_secure_secret_key_minimum_32_characters_for_ayeapps_atelier
+      - CORS_ORIGINS=["http://localhost:3000","http://localhost:3002"]
+    depends_on:
+      - mongodb
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: aye-finance-web-dev
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8003/api/v1
+    depends_on:
+      - backend
+
+  mongodb:
+    image: mongo:7.0
+    container_name: aye-finance-mongo-dev
+    restart: unless-stopped
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:

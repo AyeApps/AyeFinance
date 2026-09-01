@@ -1,0 +1,105 @@
+# ─────────────────────────────────────────────────────────────
+#  AyeFinance Monorepo .gitignore
+# ─────────────────────────────────────────────────────────────
+
+# OS & Editor files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment Variables & Secrets (CRITICAL)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+*.cert
+
+# Python & Backend (FastAPI / Beanie)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+venv/
+.venv/
+ENV/
+env/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.ruff_cache/
+.mypy_cache/
+
+# Node.js & Web App (Next.js 16 / React)
+web/node_modules/
+web/.next/
+web/out/
+web/build/
+web/.npm
+web/.turbo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+next-env.d.ts
+
+# iOS (Swift / Xcode)
+*.xcuserstate
+xcuserdata/
+DerivedData/
+*.xcworkspace/xcuserdata/
+*.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+ios-app/**/build/
+ios-app/**/Pods/
+ios-app/**/*.framework
+ios-app/**/*.app
+ios-app/**/*.dSYM
+.swiftpm/
+
+# Android (Kotlin / Gradle)
+.gradle/
+android-app/build/
+android-app/*/build/
+android-app/local.properties
+android-app/*.apk
+android-app/*.aab
+android-app/captures/
+android-app/.externalNativeBuild/
+android-app/.cxx/
+
+# Docker & Database Volumes
+mongo_data/
+*.log

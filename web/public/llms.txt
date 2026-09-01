@@ -1,0 +1,14 @@
+# AyeFinance — Personal Finance & Cash Flow Ledger
+
+> AyeFinance is a high-performance personal financial management web and mobile application part of the AyeApps ecosystem. It replaces traditional spreadsheets with real-time balance tracking, multi-account ledgering, projected 30-day cash flow analysis, and automated recurring revenue/expense schedules.
+
+## Core Capabilities
+- **Multi-Account Tracking**: Segregation of liquid checking, high-yield savings, and investment accounts.
+- **Real-Time Ledger**: Double-entry style money transfers and categorised expenses/incomes.
+- **Cash Flow Projections**: Automated forecasting of available liquidity over the next 30 days based on active recurring items.
+- **Central Identity**: Zero-friction integration with the central `aye-auth` microservice with transparent auto-provisioning.
+
+## API Documentation & Links
+- API Documentation: /docs (Development mode)
+- Health Check: /health
+- Terms & Privacy: https://ayeapps.com/privacy
