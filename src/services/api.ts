@@ -4,9 +4,6 @@ import { Account, AccountSummary, PaginatedResponse, RecurringItem, Transaction,
 
 export const getApiBaseUrl = (): string => {
   let url = process.env.EXPO_PUBLIC_API_URL || 'https://api-ayfice.ayeapps.com/api/v1';
-  if (url.includes('api.finance.ayeapps.com')) {
-    url = url.replace('api.finance.ayeapps.com', 'api-ayfice.ayeapps.com');
-  }
   if (Platform.OS === 'android' && url.includes('localhost')) {
     url = url.replace('localhost', '10.0.2.2').replace('127.0.0.1', '10.0.2.2');
   }
@@ -15,9 +12,6 @@ export const getApiBaseUrl = (): string => {
 
 export const getAuthApiBaseUrl = (): string => {
   let url = process.env.EXPO_PUBLIC_AUTH_API_URL || 'https://api-auth.ayeapps.com/api/v1';
-  if (url.includes('auth.ayeapps.com') && !url.includes('api-auth.ayeapps.com')) {
-    url = url.replace('auth.ayeapps.com', 'api-auth.ayeapps.com');
-  }
   if (Platform.OS === 'android' && url.includes('localhost')) {
     url = url.replace('localhost', '10.0.2.2').replace('127.0.0.1', '10.0.2.2');
   }
