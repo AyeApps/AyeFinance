@@ -41,14 +41,6 @@ async def get_current_user(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-    # 2. Check apps_access permissions if present in token
-    apps_access = payload.get("apps_access")
-    if apps_access is not None and not apps_access.get("finance", True):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="No tienes permisos para acceder al ecosistema de AyeFinance.",
-        )
-
     user_id = payload.get("sub")
     if not user_id:
         raise HTTPException(
