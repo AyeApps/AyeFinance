@@ -178,6 +178,7 @@ export const AuthScreen: React.FC = () => {
           nonce,
         });
         const state = encodeURIComponent(statePayload);
+        const callbackUrl = `${getAuthApiBaseUrl()}/auth/oauth/apple/callback`;
         const rawServiceId = process.env.EXPO_PUBLIC_APPLE_SERVICE_ID;
         const serviceId = rawServiceId && rawServiceId !== 'com.ayeapps.ayefinance.auth' ? rawServiceId : 'com.ayeapps.auth';
 
