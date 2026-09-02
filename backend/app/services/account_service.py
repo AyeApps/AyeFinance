@@ -18,8 +18,10 @@ async def create_account(user_id: str, data: AccountCreate) -> Account:
         projected_balance=data.initial_balance,
         color=data.color,
         icon=data.icon,
+        bank_id=data.bank_id or "generic",
         is_liquid=data.is_liquid,
     )
+
     await account.insert()
     return account
 

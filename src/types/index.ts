@@ -27,10 +27,12 @@ export interface Account {
   projected_balance: string;
   color: string;
   icon: string;
+  bank_id?: string;
   is_liquid: boolean;
   created_at: string;
   updated_at: string;
 }
+
 
 export interface AccountSummary {
   liquid_total: string;

@@ -13,6 +13,7 @@ class AccountCreate(BaseModel):
     initial_balance: Decimal = Field(default=Decimal("0.00"), ge=Decimal("0.00"))
     color: str = Field(default="#FE9D01", max_length=20)
     icon: str = Field(default="account_balance", max_length=50)
+    bank_id: str = Field(default="generic", max_length=50)
     is_liquid: bool = True
 
 
@@ -22,6 +23,7 @@ class AccountUpdate(BaseModel):
     currency: str | None = Field(default=None, min_length=3, max_length=3)
     color: str | None = Field(default=None, max_length=20)
     icon: str | None = Field(default=None, max_length=50)
+    bank_id: str | None = Field(default=None, max_length=50)
     is_liquid: bool | None = None
 
 
@@ -35,9 +37,11 @@ class AccountResponse(BaseModel):
     projected_balance: Decimal
     color: str
     icon: str
+    bank_id: str = "generic"
     is_liquid: bool
     created_at: datetime
     updated_at: datetime
+
 
 
 class AccountSummaryResponse(BaseModel):

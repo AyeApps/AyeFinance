@@ -22,7 +22,9 @@ class Account(SoftDeleteDocument):
     projected_balance: AyeDecimal = Field(default=Decimal("0.00"))
     color: str = "#FE9D01"
     icon: str = "account_balance"
+    bank_id: str = "generic"
     is_liquid: bool = True
+
 
     class Settings:
         name = "accounts"

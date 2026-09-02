@@ -35,7 +35,9 @@
     "android": "expo run:android --port 8083",
     "ios": "expo run:ios --port 8083",
     "web": "expo start --web --port 8083",
-    "build:web": "expo export --platform web"
+    "build": "expo export --platform web && node scripts/postbuild.js",
+    "build:web": "expo export --platform web && node scripts/postbuild.js",
+    "postexport": "node scripts/postbuild.js"
   },
   "private": true
 }

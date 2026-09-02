@@ -29,6 +29,10 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useTranslation } from '../../store/useLanguageStore';
 import { api } from '../../services/api';
 import { Account, AccountSummary, Transaction } from '../../types';
+import { BankAvatar } from '../ui/BankAvatar';
+import { MexicanBankId, detectBankFromName } from '../../constants/mexicanBanks';
+
+
 
 interface DashboardScreenProps {
   onNavigate: (screen: string) => void;
@@ -277,11 +281,20 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate, on
                     >
                       <View style={styles.accountBoxTop}>
                         <View style={styles.accountTypeRow}>
-                          <CreditCard size={14} color={colors.accent} />
+                          <BankAvatar
+                            bankId={
+                              acc.bank_id && acc.bank_id !== 'generic'
+                                ? (acc.bank_id as MexicanBankId)
+                                : detectBankFromName(acc.name) || 'generic'
+                            }
+                            size={24}
+                          />
                           <Text style={[styles.accountName, { color: colors.textPrimary }]} numberOfLines={1}>
                             {acc.name.toUpperCase()}
                           </Text>
                         </View>
+
+
                         <View
                           style={[
                             styles.accountPillBadge,

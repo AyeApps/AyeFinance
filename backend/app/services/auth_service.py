@@ -17,12 +17,12 @@ LOCKOUT_MINUTES = 15
 
 
 async def authenticate_user(data: UserLogin) -> tuple[User, str, str, datetime]:
-    user = await User.find_one(User.email == data.email)
+    email_clean = data.email.lower().strip()
+    user = await User.find_one(User.email == email_clean)
     if not user or user.deleted_at is not None:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenciales inválidas.",
-            headers={"WWW-Authenticate": "Bearer"},
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="ACCOUNT_NOT_FOUND",
         )
 
     # Check lockout
@@ -40,9 +40,9 @@ async def authenticate_user(data: UserLogin) -> tuple[User, str, str, datetime]:
         await user.save()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenciales inválidas.",
-            headers={"WWW-Authenticate": "Bearer"},
+            detail="INVALID_PASSWORD",
         )
+
 
     # Successful login: reset attempts
     user.login_attempts = 0

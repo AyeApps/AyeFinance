@@ -24,6 +24,10 @@ import {
 import { useTheme } from '../../hooks/useTheme';
 import { api } from '../../services/api';
 import { Account, TransactionType } from '../../types';
+import { BankAvatar } from '../ui/BankAvatar';
+import { MexicanBankId, detectBankFromName } from '../../constants/mexicanBanks';
+
+
 
 interface QuickAddModalProps {
   isOpen: boolean;
@@ -316,11 +320,16 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
                         onPress={() => setAccountId(acc.id)}
                         activeOpacity={0.8}
                       >
-                        <Landmark
-                          size={13}
-                          color={isSelected ? '#000000' : colors.accent}
-                          strokeWidth={2.5}
+                        <BankAvatar
+                          bankId={
+                            acc.bank_id && acc.bank_id !== 'generic'
+                              ? (acc.bank_id as MexicanBankId)
+                              : detectBankFromName(acc.name) || 'generic'
+                          }
+                          size={18}
+                          showBorder={false}
                         />
+
                         <Text
                           style={[
                             styles.accountPillText,
@@ -329,6 +338,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
                         >
                           {acc.name.toUpperCase()}
                         </Text>
+
                         <Text
                           style={[
                             styles.accountPillBalance,

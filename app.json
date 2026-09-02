@@ -27,7 +27,24 @@
       "usesCleartextTraffic": true
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "AyeFinance — Control de Gastos y Flujo de Caja",
+      "shortName": "AyeFinance",
+      "description": "Lleva el control de tus ingresos, gastos y cuentas bancarias en un solo lugar.",
+      "themeColor": "#FE9D01",
+      "backgroundColor": "#050505",
+      "meta": {
+        "viewport": "width=device-width, initial-scale=1, shrink-to-fit=no",
+        "description": "Lleva el control de tus ingresos, gastos y cuentas bancarias en un solo lugar. Simple y pensado para el día a día.",
+        "keywords": "control de flujo de caja, registro de ingresos y gastos, finanzas personales, gestión multicuentas, AyeFinance",
+        "og:title": "AyeFinance — Control de Gastos y Flujo de Caja",
+        "og:description": "Lleva el control de tus ingresos, gastos y cuentas bancarias en un solo lugar.",
+        "og:url": "https://finance.ayeapps.com",
+        "og:type": "website",
+        "twitter:card": "summary_large_image",
+        "twitter:title": "AyeFinance — Control de Gastos y Flujo de Caja",
+        "twitter:description": "Lleva el control de tus ingresos, gastos y cuentas bancarias en un solo lugar."
+      }
     },
     "plugins": [
       "expo-secure-store",

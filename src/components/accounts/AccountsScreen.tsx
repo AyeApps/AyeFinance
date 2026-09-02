@@ -18,6 +18,13 @@ import { ArrowLeft, Plus, Trash2, Landmark, PiggyBank, LineChart, X } from 'luci
 import { useTheme } from '../../hooks/useTheme';
 import { api } from '../../services/api';
 import { Account, AccountType } from '../../types';
+import { BankAvatar } from '../ui/BankAvatar';
+import { BankSelector } from '../ui/BankSelector';
+import {
+  MexicanBankId,
+  detectBankFromName,
+  getBankDefinition,
+} from '../../constants/mexicanBanks';
 
 const PALETTE = ['#FE9D01', '#00e676', '#00b0ff', '#a855f7', '#ec4899', '#ff1744'];
 
@@ -33,11 +40,43 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
 
   // Form state
   const [name, setName] = useState('');
+  const [selectedBankId, setSelectedBankId] = useState<MexicanBankId>('generic');
+  const [isAutoDetected, setIsAutoDetected] = useState(false);
+  const [manualOverride, setManualOverride] = useState(false);
   const [type, setType] = useState<AccountType>('corriente');
   const [balance, setBalance] = useState('');
   const [isLiquid, setIsLiquid] = useState(true);
   const [color, setColor] = useState(PALETTE[0]);
   const [isCreating, setIsCreating] = useState(false);
+
+  const handleNameChange = (text: string) => {
+    setName(text);
+    const detected = detectBankFromName(text);
+    if (detected) {
+      setSelectedBankId(detected);
+      setIsAutoDetected(true);
+      setManualOverride(false);
+    } else if (!manualOverride) {
+      setSelectedBankId('generic');
+      setIsAutoDetected(false);
+    }
+  };
+
+
+  const handleBankSelect = (bankId: MexicanBankId) => {
+    setSelectedBankId(bankId);
+    setManualOverride(true);
+    setIsAutoDetected(false);
+  };
+
+  const resetForm = () => {
+    setName('');
+    setSelectedBankId('generic');
+    setIsAutoDetected(false);
+    setManualOverride(false);
+    setBalance('');
+    setModalOpen(false);
+  };
 
   const loadAccounts = useCallback(async () => {
     try {
@@ -63,10 +102,9 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
         initial_balance: parseFloat(balance) || 0,
         is_liquid: isLiquid,
         color,
+        bank_id: selectedBankId,
       });
-      setModalOpen(false);
-      setName('');
-      setBalance('');
+      resetForm();
       loadAccounts();
     } catch (err: any) {
       alert(err.message || 'Error al crear cuenta');
@@ -74,6 +112,7 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
       setIsCreating(false);
     }
   };
+
 
   const handleDelete = async (id: string) => {
     try {
@@ -225,27 +264,19 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
 
                 <View style={styles.cardHeader}>
                   <View style={styles.cardLeft}>
-                    <View
-                      style={[
-                        styles.iconBox,
-                        {
-                          backgroundColor: colors.bgBase,
-                          borderColor: colors.borderColor,
-                        },
-                      ]}
-                    >
-                      {acc.account_type === 'ahorro' ? (
-                        <PiggyBank size={18} color="#00b0ff" strokeWidth={2.5} />
-                      ) : acc.account_type === 'inversion' ? (
-                        <LineChart size={18} color="#a855f7" strokeWidth={2.5} />
-                      ) : (
-                        <Landmark size={18} color={colors.accentSuccess} strokeWidth={2.5} />
-                      )}
-                    </View>
+                    <BankAvatar
+                      bankId={
+                        acc.bank_id && acc.bank_id !== 'generic'
+                          ? (acc.bank_id as MexicanBankId)
+                          : detectBankFromName(acc.name) || 'generic'
+                      }
+                      size={38}
+                    />
                     <View style={styles.cardMeta}>
                       <Text style={[styles.cardName, { color: colors.textPrimary }]} numberOfLines={1}>
                         {acc.name.toUpperCase()}
                       </Text>
+
                       <View style={styles.badgeRow}>
                         <View style={[styles.typeBadge, { borderColor: colors.borderColor, backgroundColor: colors.bgBase }]}>
                           <Text style={[styles.typeBadgeText, { color: colors.textSecondary }]}>
@@ -295,12 +326,12 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
       </ScrollView>
 
       {/* Modal Nueva Cuenta */}
-      <Modal visible={modalOpen} transparent animationType="fade" onRequestClose={() => setModalOpen(false)}>
+      <Modal visible={modalOpen} transparent animationType="fade" onRequestClose={resetForm}>
         <View style={styles.modalOverlay}>
           <TouchableOpacity
             style={styles.modalBackdrop}
             activeOpacity={1}
-            onPress={() => setModalOpen(false)}
+            onPress={resetForm}
           />
           <View
             style={[
@@ -309,7 +340,7 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                 backgroundColor: colors.bgBase,
                 borderColor: colors.borderColor,
                 shadowColor: colors.shadowColor,
-                width: isMobile ? '92%' : 460,
+                width: isMobile ? '92%' : 480,
                 ...(Platform.OS === 'web' ? { boxShadow: `8px 8px 0px 0px ${colors.shadowColor}` } : {}),
               },
             ]}
@@ -317,10 +348,10 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
             <View style={[styles.modalHeaderRow, { borderBottomColor: colors.borderColor }]}>
               <View>
                 <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>NUEVA CUENTA</Text>
-                <Text style={[styles.modalSub, { color: colors.accent }]}>// REGISTRO DE ACTIVO</Text>
+                <Text style={[styles.modalSub, { color: colors.accent }]}>// REGISTRO DE ACTIVO BANCARIO</Text>
               </View>
               <TouchableOpacity
-                onPress={() => setModalOpen(false)}
+                onPress={resetForm}
                 style={[styles.modalCloseBtn, { borderColor: colors.borderColor, backgroundColor: colors.bgSurface }]}
                 activeOpacity={0.7}
               >
@@ -329,6 +360,27 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
             </View>
 
             <ScrollView style={styles.modalForm} showsVerticalScrollIndicator={false}>
+              {/* Live Bank Preview Card */}
+              <View
+                style={[
+                  styles.previewBox,
+                  {
+                    backgroundColor: colors.bgSurface,
+                    borderColor: isAutoDetected ? colors.accent : colors.borderMuted,
+                  },
+                ]}
+              >
+                <BankAvatar bankId={selectedBankId} size={42} />
+                <View style={styles.previewInfo}>
+                  <Text style={[styles.previewName, { color: colors.textPrimary }]} numberOfLines={1}>
+                    {name.trim() || 'Nombre de la cuenta'}
+                  </Text>
+                  <Text style={[styles.previewBank, { color: colors.accent }]}>
+                    {getBankDefinition(selectedBankId).name}
+                  </Text>
+                </View>
+              </View>
+
               <View style={styles.formGroup}>
                 <Text style={[styles.label, { color: colors.textSecondary }]}>NOMBRE DE LA CUENTA</Text>
                 <TextInput
@@ -336,12 +388,19 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                     styles.input,
                     { backgroundColor: colors.bgSurface, borderColor: colors.borderColor, color: colors.textPrimary },
                   ]}
-                  placeholder="Ej. Nómina Santander"
+                  placeholder="Ej. Débito BBVA, Nómina Banorte, Nu..."
                   placeholderTextColor={colors.textMuted}
                   value={name}
-                  onChangeText={setName}
+                  onChangeText={handleNameChange}
                 />
               </View>
+
+              {/* Selector de Banco con Auto-detección */}
+              <BankSelector
+                selectedBankId={selectedBankId}
+                onSelectBank={handleBankSelect}
+                autoDetected={isAutoDetected}
+              />
 
               <View style={styles.formGroup}>
                 <Text style={[styles.label, { color: colors.textSecondary }]}>SALDO INICIAL ($)</Text>
@@ -357,6 +416,7 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                   onChangeText={setBalance}
                 />
               </View>
+
 
               <View style={styles.formGroup}>
                 <Text style={[styles.label, { color: colors.textSecondary }]}>TIPO DE CUENTA</Text>
@@ -671,10 +731,34 @@ const styles = StyleSheet.create({
   modalForm: {
     gap: 14,
   },
+  previewBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderWidth: 1.5,
+    marginBottom: 14,
+    gap: 12,
+  },
+  previewInfo: {
+    flex: 1,
+  },
+  previewName: {
+    fontSize: 14,
+    fontWeight: '800',
+    marginBottom: 2,
+  },
+  previewBank: {
+    fontSize: 10,
+    fontWeight: '900',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
   formGroup: {
     gap: 6,
     marginBottom: 12,
   },
+
   label: {
     fontSize: 10,
     fontWeight: '900',

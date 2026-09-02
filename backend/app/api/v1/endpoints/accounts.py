@@ -33,6 +33,7 @@ async def list_accounts(current_user: CurrentUser):
             projected_balance=acc.projected_balance,
             color=acc.color,
             icon=acc.icon,
+            bank_id=getattr(acc, "bank_id", "generic") or "generic",
             is_liquid=acc.is_liquid,
             created_at=acc.created_at,
             updated_at=acc.updated_at,
@@ -54,10 +55,12 @@ async def create_new_account(current_user: CurrentUser, data: AccountCreate):
         projected_balance=acc.projected_balance,
         color=acc.color,
         icon=acc.icon,
+        bank_id=getattr(acc, "bank_id", "generic") or "generic",
         is_liquid=acc.is_liquid,
         created_at=acc.created_at,
         updated_at=acc.updated_at,
     )
+
 
 
 @router.get("/summary", response_model=AccountSummaryResponse)

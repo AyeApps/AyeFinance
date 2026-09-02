@@ -3,20 +3,51 @@ import { authStorage } from './authStorage';
 import { Account, AccountSummary, PaginatedResponse, RecurringItem, Transaction, User } from '../types';
 
 export const getApiBaseUrl = (): string => {
-  let url = process.env.EXPO_PUBLIC_API_URL || 'https://api-ayfice.ayeapps.com/api/v1';
-  if (Platform.OS === 'android' && url.includes('localhost')) {
-    url = url.replace('localhost', '10.0.2.2').replace('127.0.0.1', '10.0.2.2');
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    let url = process.env.EXPO_PUBLIC_API_URL;
+    if (Platform.OS === 'android' && url.includes('localhost')) {
+      url = url.replace('localhost', '10.0.2.2').replace('127.0.0.1', '10.0.2.2');
+    }
+    return url;
   }
-  return url;
+
+  // Auto-detect local development
+  const isWebLocal =
+    Platform.OS === 'web' &&
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+  if (__DEV__ || isWebLocal) {
+    const host = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+    return `http://${host}:8003/api/v1`;
+  }
+
+  return 'https://api-ayfice.ayeapps.com/api/v1';
 };
 
 export const getAuthApiBaseUrl = (): string => {
-  let url = process.env.EXPO_PUBLIC_AUTH_API_URL || 'https://api-auth.ayeapps.com/api/v1';
-  if (Platform.OS === 'android' && url.includes('localhost')) {
-    url = url.replace('localhost', '10.0.2.2').replace('127.0.0.1', '10.0.2.2');
+  if (process.env.EXPO_PUBLIC_AUTH_API_URL) {
+    let url = process.env.EXPO_PUBLIC_AUTH_API_URL;
+    if (Platform.OS === 'android' && url.includes('localhost')) {
+      url = url.replace('localhost', '10.0.2.2').replace('127.0.0.1', '10.0.2.2');
+    }
+    return url;
   }
-  return url;
+
+  // Auto-detect local development
+  const isWebLocal =
+    Platform.OS === 'web' &&
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+  if (__DEV__ || isWebLocal) {
+    const host = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+    return `http://${host}:8000/api/v1`;
+  }
+
+  return 'https://api-auth.ayeapps.com/api/v1';
 };
+
 
 export const api = {
   async checkHealth(): Promise<boolean> {
