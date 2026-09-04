@@ -11,8 +11,8 @@ interface AuthState {
   error: string | null;
 
   initAuth: () => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, turnstileToken?: string) => Promise<void>;
+  register: (name: string, email: string, password: string, turnstileToken?: string) => Promise<void>;
   loginWithGoogle: (idToken: string) => Promise<void>;
   loginWithApple: (identityToken: string, name?: string, email?: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -70,10 +70,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ user: null, isAuthenticated: false, isInitializing: false, isLoading: false });
   },
 
-  login: async (email, password) => {
+  login: async (email, password, turnstileToken) => {
     set({ isLoading: true, error: null });
     try {
-      const data = await api.login({ email, password });
+      const data = await api.login({ email, password, turnstile_token: turnstileToken });
       await authStorage.setTokens(data.access_token, data.refresh_token);
       const user = await api.getMe();
       set({ user, isAuthenticated: true, isLoading: false, error: null });
@@ -83,10 +83,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  register: async (name, email, password) => {
+  register: async (name, email, password, turnstileToken) => {
     set({ isLoading: true, error: null });
     try {
-      const data = await api.register({ name, email, password });
+      const data = await api.register({ name, email, password, turnstile_token: turnstileToken });
       await authStorage.setTokens(data.access_token, data.refresh_token);
       const user = await api.getMe();
       set({ user, isAuthenticated: true, isLoading: false, error: null });

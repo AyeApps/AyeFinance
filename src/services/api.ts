@@ -59,7 +59,7 @@ export const api = {
     }
   },
 
-  async login(payload: { email: string; password: string }): Promise<{ access_token: string; refresh_token?: string; user?: User }> {
+  async login(payload: { email: string; password: string; turnstile_token?: string }): Promise<{ access_token: string; refresh_token?: string; user?: User }> {
     const res = await fetch(`${getApiBaseUrl()}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -72,7 +72,7 @@ export const api = {
     return res.json();
   },
 
-  async register(payload: { name: string; email: string; password: string }): Promise<{ access_token: string; refresh_token?: string }> {
+  async register(payload: { name: string; email: string; password: string; turnstile_token?: string }): Promise<{ access_token: string; refresh_token?: string }> {
     const res = await fetch(`${getApiBaseUrl()}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

@@ -7,6 +7,7 @@ class UserRegister(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8)
     name: str = Field(default="Usuario Aye", min_length=2, max_length=100)
+    turnstile_token: str | None = None
 
     @field_validator("password")
     @classmethod
@@ -25,6 +26,7 @@ class UserRegister(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+    turnstile_token: str | None = None
 
 
 class RefreshTokenRequest(BaseModel):

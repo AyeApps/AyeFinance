@@ -16,6 +16,7 @@ import { useAuthStore } from './src/store/useAuthStore';
 import { useThemeStore } from './src/hooks/useTheme';
 import { useLanguageStore } from './src/store/useLanguageStore';
 import { AuthScreen } from './src/components/auth/AuthScreen';
+import { LandingPage } from './src/components/landing/LandingPage';
 import { DashboardScreen } from './src/components/dashboard/DashboardScreen';
 import { AccountsScreen } from './src/components/accounts/AccountsScreen';
 import { TransactionsScreen } from './src/components/transactions/TransactionsScreen';
@@ -44,6 +45,13 @@ function MainApp() {
   const [currentScreen, setCurrentScreen] = useState('dashboard');
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  const [showAuth, setShowAuth] = useState<boolean>(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return true;
+    const hash = window.location.hash || '';
+    const search = window.location.search || '';
+    return hash.includes('login') || hash.includes('auth') || search.includes('auth') || search.includes('login');
+  });
 
   useEffect(() => {
     loadSavedTheme();
@@ -121,7 +129,11 @@ function MainApp() {
         <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
         {/* Edge-to-Edge Background Animated Matrix Grid Canvas */}
         <AnimatedDotBackground />
-        <AuthScreen />
+        {Platform.OS === 'web' && !showAuth ? (
+          <LandingPage onStartAuth={() => setShowAuth(true)} />
+        ) : (
+          <AuthScreen onBack={Platform.OS === 'web' ? () => setShowAuth(false) : undefined} />
+        )}
       </View>
     );
   }

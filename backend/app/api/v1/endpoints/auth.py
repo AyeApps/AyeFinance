@@ -22,7 +22,13 @@ router = APIRouter()
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
 @limiter.limit("3/minute")
 async def register(request: Request, data: UserRegister, response: Response):
-    user, access_token, refresh_token, exp = await register_user(data)
+    client_ip = request.headers.get("cf-connecting-ip") or request.headers.get("x-forwarded-for")
+    if client_ip and "," in client_ip:
+        client_ip = client_ip.split(",")[0].strip()
+    if not client_ip and request.client:
+        client_ip = request.client.host
+
+    user, access_token, refresh_token, exp = await register_user(data, client_ip=client_ip)
 
     response.set_cookie(
         key="refresh_token",
@@ -53,7 +59,13 @@ async def register(request: Request, data: UserRegister, response: Response):
 @router.post("/login", response_model=AuthResponse)
 @limiter.limit("5/minute")
 async def login(request: Request, data: UserLogin, response: Response):
-    user, access_token, refresh_token, exp = await authenticate_user(data)
+    client_ip = request.headers.get("cf-connecting-ip") or request.headers.get("x-forwarded-for")
+    if client_ip and "," in client_ip:
+        client_ip = client_ip.split(",")[0].strip()
+    if not client_ip and request.client:
+        client_ip = request.client.host
+
+    user, access_token, refresh_token, exp = await authenticate_user(data, client_ip=client_ip)
 
     response.set_cookie(
         key="refresh_token",

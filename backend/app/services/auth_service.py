@@ -1,7 +1,10 @@
 from datetime import UTC, datetime, timedelta
+import httpx
 
 from fastapi import HTTPException, status
 
+from app.core.config import settings
+from app.core.logging import logger
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -16,7 +19,60 @@ MAX_FAILED_ATTEMPTS = 5
 LOCKOUT_MINUTES = 15
 
 
-async def authenticate_user(data: UserLogin) -> tuple[User, str, str, datetime]:
+async def verify_turnstile_token(token: str | None, ip_address: str | None = None) -> None:
+    """
+    Valida obligatoriamente el token de Cloudflare Turnstile con el endpoint oficial de Cloudflare.
+    """
+    if not settings.TURNSTILE_SECRET_KEY:
+        logger.warning("[Turnstile] TURNSTILE_SECRET_KEY no configurada en entorno. Omitiendo validación.")
+        return
+
+    if not token or not token.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Se requiere verificación de seguridad (Turnstile token requerido).",
+        )
+
+    try:
+        data = {
+            "secret": settings.TURNSTILE_SECRET_KEY,
+            "response": token.strip(),
+        }
+        if ip_address:
+            data["remoteip"] = ip_address
+
+        async with httpx.AsyncClient(timeout=6.0) as client:
+            resp = await client.post(
+                "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+                data=data,
+            )
+            if resp.status_code != 200:
+                logger.error(f"[Turnstile] Error HTTP desde Cloudflare: {resp.status_code} - {resp.text}")
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Error comunicando con el servicio de verificación de Cloudflare",
+                )
+
+            result = resp.json()
+            if not result.get("success", False):
+                error_codes = result.get("error-codes", [])
+                logger.warning(f"[Turnstile] Verificación de bot fallida. Errores: {error_codes}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Verificación de seguridad fallida. Por favor recarga e intenta de nuevo.",
+                )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[Turnstile] Excepción validando token: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al procesar la verificación de seguridad.",
+        )
+
+
+async def authenticate_user(data: UserLogin, client_ip: str | None = None) -> tuple[User, str, str, datetime]:
+    await verify_turnstile_token(data.turnstile_token, ip_address=client_ip)
     email_clean = data.email.lower().strip()
     user = await User.find_one(User.email == email_clean)
     if not user or user.deleted_at is not None:
@@ -61,7 +117,8 @@ async def authenticate_user(data: UserLogin) -> tuple[User, str, str, datetime]:
     return user, access_token, refresh_token, exp
 
 
-async def register_user(data: UserRegister) -> tuple[User, str, str, datetime]:
+async def register_user(data: UserRegister, client_ip: str | None = None) -> tuple[User, str, str, datetime]:
+    await verify_turnstile_token(data.turnstile_token, ip_address=client_ip)
     existing = await User.find_one(User.email == data.email)
     if existing:
         raise HTTPException(
