@@ -123,6 +123,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: async () => {
+    await api.logout().catch(() => {});
     await authStorage.clearTokens();
     set({ user: null, isAuthenticated: false, isLoading: false, error: null });
   },
@@ -130,7 +131,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   deleteAccount: async () => {
     set({ isLoading: true });
     try {
-      await api.deleteUserAccount().catch(() => {});
+      await api.deleteAccount().catch(() => {});
       await authStorage.clearTokens();
       set({ user: null, isAuthenticated: false, isLoading: false, error: null });
     } catch (err: any) {

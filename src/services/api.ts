@@ -60,10 +60,10 @@ export const api = {
   },
 
   async login(payload: { email: string; password: string; turnstile_token?: string }): Promise<{ access_token: string; refresh_token?: string; user?: User }> {
-    const res = await fetch(`${getApiBaseUrl()}/auth/login`, {
+    const res = await fetch(`${getAuthApiBaseUrl()}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...payload, app_client: 'finance' }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -73,10 +73,10 @@ export const api = {
   },
 
   async register(payload: { name: string; email: string; password: string; turnstile_token?: string }): Promise<{ access_token: string; refresh_token?: string }> {
-    const res = await fetch(`${getApiBaseUrl()}/auth/register`, {
+    const res = await fetch(`${getAuthApiBaseUrl()}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...payload, app_client: 'finance' }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -86,11 +86,10 @@ export const api = {
   },
 
   async loginWithGoogle(idToken: string): Promise<{ access_token: string; refresh_token?: string }> {
-    // Falls back to direct login or central auth token
-    const res = await fetch(`${getAuthApiBaseUrl()}/auth/google`, {
+    const res = await fetch(`${getAuthApiBaseUrl()}/auth/oauth/google`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id_token: idToken }),
+      body: JSON.stringify({ id_token: idToken, app_client: 'finance' }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -100,10 +99,10 @@ export const api = {
   },
 
   async loginWithApple(identityToken: string, name?: string, email?: string): Promise<{ access_token: string; refresh_token?: string }> {
-    const res = await fetch(`${getAuthApiBaseUrl()}/auth/apple`, {
+    const res = await fetch(`${getAuthApiBaseUrl()}/auth/oauth/apple`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ identity_token: identityToken, name, email }),
+      body: JSON.stringify({ identity_token: identityToken, name, email, app_client: 'finance' }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -114,7 +113,7 @@ export const api = {
 
   async getMe(): Promise<User> {
     const token = await authStorage.getAccessToken();
-    const res = await fetch(`${getApiBaseUrl()}/auth/me`, {
+    const res = await fetch(`${getAuthApiBaseUrl()}/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) {
@@ -125,21 +124,7 @@ export const api = {
 
   async updateProfile(data: { name?: string; email?: string; current_password?: string; new_password?: string }): Promise<User> {
     const token = await authStorage.getAccessToken();
-    try {
-      const res = await fetch(`${getAuthApiBaseUrl()}/auth/me`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(data),
-      });
-      if (res.ok) {
-        return res.json();
-      }
-    } catch {}
-
-    const localRes = await fetch(`${getApiBaseUrl()}/auth/me`, {
+    const res = await fetch(`${getAuthApiBaseUrl()}/auth/me`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -147,11 +132,33 @@ export const api = {
       },
       body: JSON.stringify(data),
     });
-    if (!localRes.ok) {
-      const err = await localRes.json().catch(() => ({}));
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || 'Error al actualizar perfil');
     }
-    return localRes.json();
+    return res.json();
+  },
+
+  async logout(): Promise<void> {
+    const token = await authStorage.getAccessToken();
+    try {
+      await fetch(`${getAuthApiBaseUrl()}/auth/logout`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch {}
+  },
+
+  async deleteAccount(): Promise<void> {
+    const token = await authStorage.getAccessToken();
+    const res = await fetch(`${getAuthApiBaseUrl()}/auth/me`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al eliminar cuenta');
+    }
   },
 
   async getSummary(): Promise<AccountSummary> {

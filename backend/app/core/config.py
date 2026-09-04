@@ -29,7 +29,6 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
-    TURNSTILE_SECRET_KEY: str = ""
 
     # CORS
     CORS_ORIGINS: list[str] | str = [
@@ -37,9 +36,6 @@ class Settings(BaseSettings):
         "http://localhost:3002",
         "https://finance.ayeapps.com",
     ]
-
-    # Central Auth URL (optional integration)
-    AYE_AUTH_URL: str = "http://localhost:8000/api/v1/auth"
 
     @field_validator("JWT_SECRET_KEY")
     @classmethod
