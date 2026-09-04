@@ -7,7 +7,8 @@ const indexPath = path.join(distPath, 'index.html');
 if (fs.existsSync(indexPath)) {
   let html = fs.readFileSync(indexPath, 'utf8');
 
-  const seoTags = `
+  if (!html.includes('G-XBM6DZGE5B')) {
+    const seoTags = `
     <!-- SEO & Social Meta Tags -->
     <meta name="keywords" content="control de flujo de caja, registro de ingresos y gastos, finanzas personales, gestión multicuentas, AyeFinance">
     <link rel="canonical" href="https://finance.ayeapps.com">
@@ -49,10 +50,13 @@ if (fs.existsSync(indexPath)) {
     </script>
   </head>`;
 
-  html = html.replace('</head>', seoTags);
-  html = html.replace('<html lang="en">', '<html lang="es">');
-  fs.writeFileSync(indexPath, html, 'utf8');
-  console.log('✓ AyeFinance SEO injected into dist/index.html');
+    html = html.replace('</head>', seoTags);
+    html = html.replace('<html lang="en">', '<html lang="es">');
+    fs.writeFileSync(indexPath, html, 'utf8');
+    console.log('✓ AyeFinance SEO injected into dist/index.html');
+  } else {
+    console.log('✓ AyeFinance Google Tag and SEO already present in dist/index.html');
+  }
 
   // Create sitemap.xml
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>

@@ -1,0 +1,5 @@
+User-Agent: *
+Allow: /
+
+Host: https://finance.ayeapps.com
+Sitemap: https://finance.ayeapps.com/sitemap.xml
