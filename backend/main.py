@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from slowapi.errors import RateLimitExceeded
 
 from app.api.v1.router import api_router
@@ -58,6 +58,21 @@ app.add_middleware(
 )
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RequestIDMiddleware)
+
+
+@app.get("/", tags=["Health"], status_code=status.HTTP_200_OK)
+async def root():
+    return {
+        "status": "ok",
+        "app": settings.APP_NAME,
+        "env": settings.APP_ENV,
+        "version": "1.0.0",
+    }
+
+
+@app.get("/robots.txt", response_class=PlainTextResponse, tags=["SEO"])
+async def robots():
+    return "User-agent: *\nDisallow: /\n"
 
 
 @app.get("/health", tags=["Health"], status_code=status.HTTP_200_OK)

@@ -1,0 +1,22 @@
+# AyeFinance — Software Atelier
+
+> High-performance personal finance management, multi-account ledger, and 30-day cash flow forecasting engine from the AyeApps suite.
+
+## Product & Capabilities
+- [AyeFinance](https://finance.ayeapps.com): Precision personal finance tracker and liquidity management engine. Replaces spreadsheets with real-time multi-account tracking (liquid checking, high-yield savings, investments).
+- Double-entry style money transfers and categorised expense and income allocation.
+- Automated cash flow projections: 30-day forecasting of available liquidity based on active recurring items.
+- Single unified multiplatform codebase for Web, iOS, and Android built on React Native and Expo SDK 57.
+- Atelier Cyber-Amber design system (#FE9D01 / #050505) with dark/light themes, tactile feedback, and solid neo-brutalist elevation.
+
+## AyeApps Ecosystem
+- [AyeApps Software Atelier](https://ayeapps.com): Software engineering atelier, cloud infrastructure, and bespoke digital platforms.
+- [AyeVideoDownloader](https://video.ayeapps.com): High-velocity, lossless 4K HDR multimedia conversion and audio extraction engine.
+- [AyeTasks](https://tasks.ayeapps.com): High-velocity hierarchical task manager, time tracker, and project execution engine.
+- [AyeFinance](https://finance.ayeapps.com): High-performance personal finance management, multi-account ledger, and 30-day cash flow forecasting engine.
+- [AyeAuth](https://accounts.ayeapps.com): Centralized identity, OAuth2 SSO, and cross-application permissions provider.
+
+## Technical Architecture
+- Backend: Python 3.13, FastAPI (Strict Async), Beanie ODM (MongoDB).
+- Frontend: React Native + Expo SDK 57, React Native Web, Zustand, Atelier Design Tokens.
+- Security: OAuth2, HS256 JWT, Automated Token Revocation, Rate Limiting, Cloudflare Turnstile.

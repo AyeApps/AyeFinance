@@ -35,6 +35,7 @@
       "backgroundColor": "#050505",
       "meta": {
         "viewport": "width=device-width, initial-scale=1, shrink-to-fit=no",
+        "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
         "description": "Lleva el control de tus ingresos, gastos y cuentas bancarias en un solo lugar. Simple y pensado para el día a día.",
         "keywords": "control de flujo de caja, registro de ingresos y gastos, finanzas personales, gestión multicuentas, AyeFinance",
         "og:title": "AyeFinance — Control de Gastos y Flujo de Caja",

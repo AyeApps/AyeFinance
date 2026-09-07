@@ -8,6 +8,13 @@
 - **Cash Flow Projections**: Automated forecasting of available liquidity over the next 30 days based on active recurring items.
 - **Central Identity**: Zero-friction integration with the central `aye-auth` microservice with transparent auto-provisioning.
 
+## AyeApps Ecosystem
+- [AyeApps Software Atelier](https://ayeapps.com): Software engineering atelier, cloud infrastructure, and bespoke digital platforms.
+- [AyeVideoDownloader](https://video.ayeapps.com): High-velocity, lossless 4K HDR multimedia conversion and audio extraction engine.
+- [AyeTasks](https://tasks.ayeapps.com): High-velocity hierarchical task manager, time tracker, and project execution engine.
+- [AyeFinance](https://finance.ayeapps.com): High-performance personal finance management, multi-account ledger, and 30-day cash flow forecasting engine.
+- [AyeAuth](https://accounts.ayeapps.com): Centralized identity, OAuth2 SSO, and cross-application permissions provider.
+
 ## API Documentation & Links
 - API Documentation: /docs (Development mode)
 - Health Check: /health
