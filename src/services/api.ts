@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import { authStorage } from './authStorage';
+import { widgetBridge } from './widgetBridge';
 import { Account, AccountSummary, PaginatedResponse, RecurringItem, Transaction, User } from '../types';
 
 export const getApiBaseUrl = (): string => {
@@ -149,18 +150,6 @@ export const api = {
     } catch {}
   },
 
-  async deleteAccount(): Promise<void> {
-    const token = await authStorage.getAccessToken();
-    const res = await fetch(`${getAuthApiBaseUrl()}/auth/me`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Error al eliminar cuenta');
-    }
-  },
-
   async getSummary(): Promise<AccountSummary> {
     const token = await authStorage.getAccessToken();
     const res = await fetch(`${getApiBaseUrl()}/accounts/summary`, {
@@ -176,7 +165,11 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error('Error al cargar cuentas');
-    return res.json();
+    const accounts: Account[] = await res.json();
+    if (token) {
+      widgetBridge.syncWidgetData(token, accounts).catch(() => {});
+    }
+    return accounts;
   },
 
   async createAccount(data: any): Promise<Account> {
@@ -199,9 +192,20 @@ export const api = {
     return res.json();
   },
 
-  async deleteAccount(id: string): Promise<void> {
+  async deleteAccount(id?: string): Promise<void> {
     const token = await authStorage.getAccessToken();
-    const res = await fetch(`${getApiBaseUrl()}/accounts/${id}`, {
+    if (id) {
+      const res = await fetch(`${getApiBaseUrl()}/accounts/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'Error al eliminar cuenta');
+      }
+      return;
+    }
+    const res = await fetch(`${getAuthApiBaseUrl()}/auth/me`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -255,6 +259,57 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error('Error al cargar recurrentes');
+    return res.json();
+  },
+
+  async createRecurring(data: {
+    name: string;
+    type: 'ingreso_fijo' | 'gasto_fijo' | 'mensualidad';
+    amount: string | number;
+    frequency: 'semanal' | 'quincenal' | 'mensual';
+    day_of_month?: number | null;
+    account_id: string;
+    next_date?: string | null;
+    is_active?: boolean;
+  }): Promise<RecurringItem> {
+    const token = await authStorage.getAccessToken();
+    const res = await fetch(`${getApiBaseUrl()}/recurring/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        ...data,
+        amount: String(data.amount),
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al crear recurrente');
+    }
+    return res.json();
+  },
+
+  async deleteRecurring(id: string): Promise<void> {
+    const token = await authStorage.getAccessToken();
+    const res = await fetch(`${getApiBaseUrl()}/recurring/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error('Error al eliminar recurrente');
+  },
+
+  async applyRecurring(id: string): Promise<Transaction> {
+    const token = await authStorage.getAccessToken();
+    const res = await fetch(`${getApiBaseUrl()}/recurring/${id}/apply`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al aplicar recurrente');
+    }
     return res.json();
   },
 

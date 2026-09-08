@@ -26,6 +26,13 @@ class Transaction(SoftDeleteDocument):
     notes: str | None = None
     is_recurring: bool = False
     recurring_item_id: str | None = None
+    is_msi: bool = False
+    msi_months: int | None = None
+    msi_monthly_amount: AyeDecimal | None = None
+    cashback_earned: AyeDecimal | None = None
+    points_earned: int | None = None
+    is_external: bool = False
+    external_account_name: str | None = None
 
     class Settings:
         name = "transactions"

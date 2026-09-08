@@ -10,6 +10,8 @@ import {
   View,
   useWindowDimensions,
   StatusBar,
+  ScrollView,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -439,20 +441,36 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onBack }) => {
         </TouchableOpacity>
       </View>
 
-      {/* Centered Tech View */}
-      <View style={[styles.centeredView, { backgroundColor: 'transparent' }]}>
-        <View
-          style={[
-            styles.techFrame,
+      {/* Scrollable & Keyboard-aware Tech View */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.keyboardAvoidRoot}
+      >
+        <ScrollView
+          style={styles.scrollViewRoot}
+          contentContainerStyle={[
+            styles.centeredView,
+            isMobile && styles.centeredViewMobile,
             {
-              backgroundColor: colors.bgBase,
-              borderColor: colors.borderColor,
-              shadowColor: colors.shadowColor,
-              ...(Platform.OS === 'web' ? { boxShadow: `12px 12px 0px 0px ${colors.shadowColor}` } : {}),
+              paddingTop: Math.max(topInset, 16) + (isMobile ? 56 : 64),
+              paddingBottom: Math.max(bottomInset, 16) + 36,
             },
-            isMobile && styles.techFrameMobile,
           ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
+          <View
+            style={[
+              styles.techFrame,
+              {
+                backgroundColor: colors.bgBase,
+                borderColor: colors.borderColor,
+                shadowColor: colors.shadowColor,
+                ...(Platform.OS === 'web' ? { boxShadow: `12px 12px 0px 0px ${colors.shadowColor}` } : {}),
+              },
+              isMobile && styles.techFrameMobile,
+            ]}
+          >
           {/* Tech Badge / Live Server Health Status */}
           <TouchableOpacity
             style={[
@@ -504,7 +522,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onBack }) => {
             </Text>
           </TouchableOpacity>
 
-          <View style={styles.techFrameContent}>
+          <View style={[styles.techFrameContent, isMobile && styles.techFrameContentMobile]}>
             {/* Title Section */}
             <View style={styles.titleSection}>
               <View style={styles.authLogoBox}>
@@ -806,9 +824,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onBack }) => {
             </View>
           </View>
         </View>
-      </View>
-    </View>
-  );
+      </ScrollView>
+    </KeyboardAvoidingView>
+  </View>
+);
 };
 
 const styles = StyleSheet.create({
@@ -869,13 +888,23 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
     letterSpacing: 0.8,
   },
-  centeredView: {
+  keyboardAvoidRoot: {
     flex: 1,
     width: '100%',
-    height: '100%',
+  },
+  scrollViewRoot: {
+    flex: 1,
+    width: '100%',
+  },
+  centeredView: {
+    flexGrow: 1,
+    width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+  },
+  centeredViewMobile: {
+    paddingHorizontal: 12,
   },
   techFrame: {
     width: '100%',
@@ -917,6 +946,10 @@ const styles = StyleSheet.create({
   techFrameContent: {
     paddingHorizontal: 32,
     paddingBottom: 36,
+  },
+  techFrameContentMobile: {
+    paddingHorizontal: 16,
+    paddingBottom: 24,
   },
   titleSection: {
     marginBottom: 24,

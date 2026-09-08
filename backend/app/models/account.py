@@ -9,6 +9,8 @@ from app.models.base import AyeDecimal, SoftDeleteDocument
 
 class AccountType(StrEnum):
     corriente = "corriente"
+    debito = "debito"
+    credito = "credito"
     ahorro = "ahorro"
     inversion = "inversion"
 
@@ -24,6 +26,11 @@ class Account(SoftDeleteDocument):
     icon: str = "account_balance"
     bank_id: str = "generic"
     is_liquid: bool = True
+    card_product: str | None = None
+    credit_limit: AyeDecimal | None = None
+    cut_off_day: int | None = Field(default=None, ge=1, le=31)
+    payment_due_day: int | None = Field(default=None, ge=1, le=31)
+    payment_grace_days: int | None = Field(default=None, ge=1, le=60)
 
 
     class Settings:

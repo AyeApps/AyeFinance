@@ -9,5 +9,7 @@ Reemplazar y digitalizar hojas de cálculo tradicionales mediante una plataforma
 ## 👤 Casos de Uso Clave
 - **Registro Inmediato de Movimientos**: Captura rápida de ingresos y gastos con asignación de categoría y cuenta.
 - **Traspaso entre Cuentas**: Transferencias con actualización atómica de balance de origen y destino.
-- **Automatización de Recurrentes**: Aplicación inmediata en 1 click de pagos periódicos con avance automático de fecha.
 - **Protección de Datos**: Cada usuario cuenta con un espacio aislado e independiente.
+
+## Platform
+adaptive

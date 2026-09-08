@@ -162,3 +162,43 @@ async def test_recurring_item_apply(client: AsyncClient, auth_headers):
     # Check account balance updated -> $17,000.00
     acc_check = (await client.get(f"/api/v1/accounts/{acc['id']}", headers=auth_headers)).json()
     assert acc_check["current_balance"] == "17000.00"
+
+
+@pytest.mark.asyncio
+async def test_transaction_with_msi_and_rewards(client: AsyncClient, auth_headers):
+    acc = (
+        await client.post(
+            "/api/v1/accounts/",
+            json={"name": "BBVA Oro TDC", "account_type": "credito", "initial_balance": "0.00"},
+            headers=auth_headers,
+        )
+    ).json()
+
+    # Create transaction with 12 MSI and 1320 points
+    tx_resp = await client.post(
+        "/api/v1/transactions/",
+        json={
+            "account_id": acc["id"],
+            "amount": "12000.00",
+            "type": "gasto",
+            "concept": "MacBook Air",
+            "category": "Tecnología",
+            "is_msi": True,
+            "msi_months": 12,
+            "points_earned": 1320,
+            "cashback_earned": "0.00",
+        },
+        headers=auth_headers,
+    )
+    assert tx_resp.status_code == 201
+    tx_data = tx_resp.json()
+    assert tx_data["is_msi"] is True
+    assert tx_data["msi_months"] == 12
+    assert tx_data["msi_monthly_amount"] == "1000.00"
+    assert tx_data["points_earned"] == 1320
+
+    # Summary check
+    sum_resp = await client.get("/api/v1/accounts/summary", headers=auth_headers)
+    assert sum_resp.status_code == 200
+    sum_data = sum_resp.json()
+    assert sum_data["month_points"] == 1320

@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  AppState,
+  AppStateStatus,
+  Linking,
   StatusBar,
   View,
   Text,
@@ -26,7 +29,84 @@ import { AnimatedDotBackground } from './src/components/canvas/AnimatedDotBackgr
 import { FinanceHeader } from './src/components/navigation/FinanceHeader';
 import { FinanceFloatingDock } from './src/components/navigation/FinanceFloatingDock';
 import { SidebarDrawer } from './src/components/navigation/SidebarDrawer';
-import { QuickAddModal } from './src/components/transactions/QuickAddModal';
+import { QuickAddModal, QuickAddInitialData } from './src/components/transactions/QuickAddModal';
+import { TransactionType } from './src/types';
+
+/**
+ * Parses deep link URLs (e.g. ayefinance://transaction/new or ayefinance://quick-add)
+ * Extracts parameters: amount, concept / desc, accountId / account, type.
+ */
+function parseQuickAddUrl(url: string): { isQuickAdd: boolean; initialData?: QuickAddInitialData } {
+  if (!url) return { isQuickAdd: false };
+
+  try {
+    const [rawPath, rawQuery] = url.split('?');
+    const path = rawPath.toLowerCase();
+
+    // Check if the URL target is a quick-add / new transaction movement
+    const isMatch =
+      path.includes('transaction/new') ||
+      path.includes('quick-add') ||
+      path.includes('quickadd') ||
+      path.endsWith('/new');
+
+    if (!isMatch) {
+      return { isQuickAdd: false };
+    }
+
+    const params: Record<string, string> = {};
+    if (rawQuery) {
+      rawQuery.split('&').forEach((part) => {
+        const [k, v] = part.split('=');
+        if (k) {
+          try {
+            params[decodeURIComponent(k).trim().toLowerCase()] = v
+              ? decodeURIComponent(v.replace(/\+/g, ' ')).trim()
+              : '';
+          } catch {
+            params[k.trim().toLowerCase()] = v ? v.trim() : '';
+          }
+        }
+      });
+    }
+
+    const initialData: QuickAddInitialData = {};
+
+    // 1. Amount
+    if (params.amount) {
+      initialData.amount = params.amount;
+    }
+
+    // 2. Concept / desc / description
+    const concept = params.concept || params.desc || params.description;
+    if (concept) {
+      initialData.concept = concept;
+    }
+
+    // 3. Account / accountId / account_id
+    const accountId = params.accountid || params.account || params.account_id;
+    if (accountId) {
+      initialData.accountId = accountId;
+    }
+
+    // 4. Type (gasto, ingreso, transferencia)
+    const rawType = (params.type || '').toLowerCase();
+    if (rawType === 'ingreso' || rawType === 'income') {
+      initialData.type = 'ingreso' as TransactionType;
+    } else if (rawType === 'gasto' || rawType === 'expense') {
+      initialData.type = 'gasto' as TransactionType;
+    } else if (rawType === 'transferencia' || rawType === 'transfer') {
+      initialData.type = 'transferencia' as TransactionType;
+    }
+
+    return { isQuickAdd: true, initialData };
+  } catch (err) {
+    if (__DEV__) {
+      console.warn('[DeepLinking] Error parsing deep link:', url, err);
+    }
+    return { isQuickAdd: false };
+  }
+}
 
 function MainApp() {
   const isInitializing = useAuthStore((state) => state.isInitializing);
@@ -44,6 +124,7 @@ function MainApp() {
 
   const [currentScreen, setCurrentScreen] = useState('dashboard');
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  const [quickAddInitialData, setQuickAddInitialData] = useState<QuickAddInitialData | undefined>(undefined);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const [showAuth, setShowAuth] = useState<boolean>(() => {
@@ -52,6 +133,63 @@ function MainApp() {
     const search = window.location.search || '';
     return hash.includes('login') || hash.includes('auth') || search.includes('auth') || search.includes('login');
   });
+
+  // Deep linking listener for quick movements (ayefinance://transaction/new or ayefinance://quick-add) or auth tokens
+  useEffect(() => {
+    const handleUrl = (url: string | null) => {
+      if (!url) return;
+      if (url.includes('access_token=') || url.includes('token=')) {
+        initAuth();
+        return;
+      }
+      const parsed = parseQuickAddUrl(url);
+      if (parsed.isQuickAdd) {
+        setQuickAddInitialData(parsed.initialData);
+        setIsQuickAddOpen(true);
+      }
+    };
+
+    // Cold start deep link check
+    Linking.getInitialURL()
+      .then((initialUrl) => {
+        if (initialUrl) {
+          handleUrl(initialUrl);
+        }
+      })
+      .catch((err) => {
+        if (__DEV__) {
+          console.warn('[DeepLinking] Failed to get initial URL:', err);
+        }
+      });
+
+    // Runtime deep link events listener
+    const subscription = Linking.addEventListener('url', (event) => {
+      handleUrl(event.url);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
+  // Listen to AppState transitions to refresh dashboard data when app returns to foreground
+  useEffect(() => {
+    let currentAppState = AppState.currentState;
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      if (
+        currentAppState.match(/inactive|background/) &&
+        nextAppState === 'active'
+      ) {
+        // App transitioned to foreground/active: refresh dashboard data in case of silent background recording
+        setRefreshKey((prev) => prev + 1);
+      }
+      currentAppState = nextAppState;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     loadSavedTheme();
@@ -153,7 +291,10 @@ function MainApp() {
           <DashboardScreen
             key={refreshKey}
             onNavigate={(screen) => setCurrentScreen(screen)}
-            onOpenQuickAdd={() => setIsQuickAddOpen(true)}
+            onOpenQuickAdd={(initData) => {
+              setQuickAddInitialData(initData);
+              setIsQuickAddOpen(true);
+            }}
           />
         );
     }
@@ -186,14 +327,21 @@ function MainApp() {
         <FinanceFloatingDock
           currentScreen={currentScreen}
           onNavigate={(screen) => setCurrentScreen(screen)}
-          onOpenQuickAdd={() => setIsQuickAddOpen(true)}
+          onOpenQuickAdd={() => {
+            setQuickAddInitialData(undefined);
+            setIsQuickAddOpen(true);
+          }}
         />
       )}
 
       {/* Quick Add Transaction Modal */}
       <QuickAddModal
         isOpen={isQuickAddOpen}
-        onClose={() => setIsQuickAddOpen(false)}
+        initialData={quickAddInitialData}
+        onClose={() => {
+          setIsQuickAddOpen(false);
+          setQuickAddInitialData(undefined);
+        }}
         onSuccess={() => setRefreshKey((prev) => prev + 1)}
       />
 

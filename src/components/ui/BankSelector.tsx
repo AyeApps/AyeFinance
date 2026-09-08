@@ -129,10 +129,11 @@ const styles = StyleSheet.create({
   bankPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderRadius: 8,
     gap: 8,
+    minHeight: 44,
   },
   bankName: {
     fontSize: 12,

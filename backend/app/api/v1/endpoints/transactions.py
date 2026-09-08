@@ -47,9 +47,7 @@ async def list_transactions(
     return await get_transactions(str(current_user.id), filters)
 
 
-@router.post("/", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)
-async def create_new_transaction(current_user: CurrentUser, data: TransactionCreate):
-    tx = await create_transaction(str(current_user.id), data)
+def _serialize_transaction(tx) -> TransactionResponse:
     return TransactionResponse(
         id=str(tx.id),
         user_id=tx.user_id,
@@ -63,51 +61,32 @@ async def create_new_transaction(current_user: CurrentUser, data: TransactionCre
         notes=tx.notes,
         is_recurring=tx.is_recurring,
         recurring_item_id=tx.recurring_item_id,
+        is_msi=getattr(tx, "is_msi", False),
+        msi_months=getattr(tx, "msi_months", None),
+        msi_monthly_amount=getattr(tx, "msi_monthly_amount", None),
+        cashback_earned=getattr(tx, "cashback_earned", None),
+        points_earned=getattr(tx, "points_earned", None),
         created_at=tx.created_at,
         updated_at=tx.updated_at,
     )
+
+
+@router.post("/", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)
+async def create_new_transaction(current_user: CurrentUser, data: TransactionCreate):
+    tx = await create_transaction(str(current_user.id), data)
+    return _serialize_transaction(tx)
 
 
 @router.get("/{id}", response_model=TransactionResponse)
 async def get_transaction_detail(id: str, current_user: CurrentUser):
     tx = await get_transaction(str(current_user.id), id)
-    return TransactionResponse(
-        id=str(tx.id),
-        user_id=tx.user_id,
-        account_id=tx.account_id,
-        destination_account_id=tx.destination_account_id,
-        amount=tx.amount,
-        type=tx.type,
-        concept=tx.concept,
-        category=tx.category,
-        date=tx.date,
-        notes=tx.notes,
-        is_recurring=tx.is_recurring,
-        recurring_item_id=tx.recurring_item_id,
-        created_at=tx.created_at,
-        updated_at=tx.updated_at,
-    )
+    return _serialize_transaction(tx)
 
 
 @router.patch("/{id}", response_model=TransactionResponse)
 async def update_transaction_detail(id: str, data: TransactionUpdate, current_user: CurrentUser):
     tx = await update_transaction(str(current_user.id), id, data)
-    return TransactionResponse(
-        id=str(tx.id),
-        user_id=tx.user_id,
-        account_id=tx.account_id,
-        destination_account_id=tx.destination_account_id,
-        amount=tx.amount,
-        type=tx.type,
-        concept=tx.concept,
-        category=tx.category,
-        date=tx.date,
-        notes=tx.notes,
-        is_recurring=tx.is_recurring,
-        recurring_item_id=tx.recurring_item_id,
-        created_at=tx.created_at,
-        updated_at=tx.updated_at,
-    )
+    return _serialize_transaction(tx)
 
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)

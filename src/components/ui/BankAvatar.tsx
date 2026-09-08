@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, ViewStyle, Image, ImageSourcePropType } from 'react-native';
-import Svg, { Rect, Path, Circle } from 'react-native-svg';
+import { Wallet } from 'lucide-react-native';
 import { MexicanBankId, getBankDefinition } from '../../constants/mexicanBanks';
 
 interface BankAvatarProps {
@@ -28,6 +28,7 @@ const BANK_LOGOS: Record<string, ImageSourcePropType> = {
   visa: require('../../../assets/banks/visa.png'),
   mastercard: require('../../../assets/banks/mastercard.png'),
   binance: require('../../../assets/banks/binance.png'),
+  revolut: require('../../../assets/banks/revolut.png'),
 };
 
 export const BankAvatar: React.FC<BankAvatarProps> = ({
@@ -49,7 +50,12 @@ export const BankAvatar: React.FC<BankAvatarProps> = ({
           height: size,
           borderRadius: cornerRadius,
           backgroundColor: bank.brandColor || '#141414',
-          borderColor: showBorder ? 'rgba(255, 255, 255, 0.22)' : 'transparent',
+          borderWidth: showBorder ? 1 : 0,
+          borderColor: showBorder
+            ? bank.brandColor?.toLowerCase() === '#ffffff'
+              ? 'rgba(0, 0, 0, 0.12)'
+              : 'rgba(255, 255, 255, 0.22)'
+            : 'transparent',
         },
         style,
       ]}
@@ -64,11 +70,7 @@ export const BankAvatar: React.FC<BankAvatarProps> = ({
           }}
         />
       ) : (
-        <Svg viewBox="0 0 100 100" width="65%" height="65%">
-          <Rect x="18" y="28" width="64" height="48" rx="8" fill="none" stroke="#FE9D01" strokeWidth="5" />
-          <Path d="M18 42 L82 42" stroke="#FE9D01" strokeWidth="4" />
-          <Circle cx="64" cy="56" r="5" fill="#FE9D01" />
-        </Svg>
+        <Wallet size={Math.round(size * 0.58)} color="#10B981" strokeWidth={2.2} />
       )}
     </View>
   );
@@ -78,7 +80,6 @@ const styles = StyleSheet.create({
   container: {
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1.5,
     overflow: 'hidden',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },

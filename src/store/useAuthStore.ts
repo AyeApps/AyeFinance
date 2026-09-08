@@ -1,6 +1,8 @@
 import { create } from 'zustand';
+import { Linking } from 'react-native';
 import { api } from '../services/api';
 import { authStorage } from '../services/authStorage';
+import { widgetBridge } from '../services/widgetBridge';
 import { User } from '../types';
 
 interface AuthState {
@@ -18,6 +20,7 @@ interface AuthState {
   logout: () => Promise<void>;
   deleteAccount: () => Promise<void>;
   updateProfile: (data: { name?: string; email?: string; current_password?: string; new_password?: string }) => Promise<void>;
+  syncWidget: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -54,18 +57,42 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         } catch {}
       }
 
+      // Check for tokens passed via native deep link (e.g. ayefinance://auth?access_token=...)
+      try {
+        const initialUrl = await Linking.getInitialURL();
+        if (initialUrl && (initialUrl.includes('access_token=') || initialUrl.includes('token='))) {
+          const rawQuery = initialUrl.includes('?')
+            ? initialUrl.split('?')[1]
+            : (initialUrl.includes('#') ? initialUrl.split('#')[1] : '');
+          const params = new URLSearchParams(rawQuery);
+          const accessToken = params.get('access_token') || params.get('token');
+          const refreshToken = params.get('refresh_token');
+          if (accessToken) {
+            await authStorage.setTokens(accessToken, refreshToken || undefined);
+          }
+        }
+      } catch {}
+
       const token = await authStorage.getAccessToken();
       if (token) {
         try {
           const user = await api.getMe();
           set({ user, isAuthenticated: true, isInitializing: false, isLoading: false });
+          // Synchronize accounts to native widget bridge
+          api.getAccounts()
+            .then((accounts) => {
+              widgetBridge.syncWidgetData(token, accounts).catch(() => {});
+            })
+            .catch(() => {});
           return;
         } catch {
           await authStorage.clearTokens();
+          await widgetBridge.clearWidgetData().catch(() => {});
         }
       }
     } catch {
       await authStorage.clearTokens();
+      await widgetBridge.clearWidgetData().catch(() => {});
     }
     set({ user: null, isAuthenticated: false, isInitializing: false, isLoading: false });
   },
@@ -77,6 +104,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await authStorage.setTokens(data.access_token, data.refresh_token);
       const user = await api.getMe();
       set({ user, isAuthenticated: true, isLoading: false, error: null });
+      api.getAccounts()
+        .then((accounts) => {
+          widgetBridge.syncWidgetData(data.access_token, accounts).catch(() => {});
+        })
+        .catch(() => {});
     } catch (err: any) {
       set({ error: err.message || 'Error al iniciar sesión', isLoading: false });
       throw err;
@@ -90,6 +122,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await authStorage.setTokens(data.access_token, data.refresh_token);
       const user = await api.getMe();
       set({ user, isAuthenticated: true, isLoading: false, error: null });
+      api.getAccounts()
+        .then((accounts) => {
+          widgetBridge.syncWidgetData(data.access_token, accounts).catch(() => {});
+        })
+        .catch(() => {});
     } catch (err: any) {
       set({ error: err.message || 'Error al registrar usuario', isLoading: false });
       throw err;
@@ -103,6 +140,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await authStorage.setTokens(data.access_token, data.refresh_token);
       const user = await api.getMe();
       set({ user, isAuthenticated: true, isLoading: false, error: null });
+      api.getAccounts()
+        .then((accounts) => {
+          widgetBridge.syncWidgetData(data.access_token, accounts).catch(() => {});
+        })
+        .catch(() => {});
     } catch (err: any) {
       set({ error: err.message || 'Error con Google', isLoading: false });
       throw err;
@@ -116,6 +158,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await authStorage.setTokens(data.access_token, data.refresh_token);
       const user = await api.getMe();
       set({ user, isAuthenticated: true, isLoading: false, error: null });
+      api.getAccounts()
+        .then((accounts) => {
+          widgetBridge.syncWidgetData(data.access_token, accounts).catch(() => {});
+        })
+        .catch(() => {});
     } catch (err: any) {
       set({ error: err.message || 'Error con Apple', isLoading: false });
       throw err;
@@ -125,6 +172,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   logout: async () => {
     await api.logout().catch(() => {});
     await authStorage.clearTokens();
+    await widgetBridge.clearWidgetData().catch(() => {});
     set({ user: null, isAuthenticated: false, isLoading: false, error: null });
   },
 
@@ -133,6 +181,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       await api.deleteAccount().catch(() => {});
       await authStorage.clearTokens();
+      await widgetBridge.clearWidgetData().catch(() => {});
       set({ user: null, isAuthenticated: false, isLoading: false, error: null });
     } catch (err: any) {
       set({ isLoading: false });
@@ -149,5 +198,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ error: err.message || 'Error al actualizar perfil', isLoading: false });
       throw err;
     }
+  },
+
+  syncWidget: async () => {
+    try {
+      const token = await authStorage.getAccessToken();
+      if (!token) return;
+      const accounts = await api.getAccounts().catch(() => []);
+      await widgetBridge.syncWidgetData(token, accounts);
+    } catch {}
   },
 }));

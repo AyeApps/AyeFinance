@@ -12,14 +12,20 @@ import {
   View,
   useWindowDimensions,
   StatusBar,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, Plus, Trash2, Receipt, ArrowDownLeft, ArrowUpRight, ArrowLeftRight, X, Landmark, Check, AlertCircle } from 'lucide-react-native';
+import { ArrowLeft, Plus, Trash2, Receipt, ArrowDownLeft, ArrowUpRight, ArrowLeftRight, X, Landmark, Check, AlertCircle, CreditCard, Sparkles } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { api } from '../../services/api';
 import { Account, Transaction, TransactionType } from '../../types';
+import { calculateTransactionRewards } from '../../utils/cardBenefits';
+import {
+  predictCategory,
+  STANDARD_CATEGORIES,
+} from '../../constants/categoryRules';
 
-const CATEGORIES = ['General', 'Comida', 'Transporte', 'Servicios', 'Supermercado', 'Salario', 'Inversión', 'Entretenimiento'];
+const CATEGORIES = STANDARD_CATEGORIES;
 
 export const TransactionsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { width } = useWindowDimensions();
@@ -39,9 +45,47 @@ export const TransactionsScreen: React.FC<{ onBack: () => void }> = ({ onBack })
   const [amount, setAmount] = useState('');
   const [concept, setConcept] = useState('');
   const [category, setCategory] = useState(CATEGORIES[0]);
+  const [userEditedCategory, setUserEditedCategory] = useState(false);
+  const [autofilledCategory, setAutofilledCategory] = useState<string | null>(null);
+  const [matchedKeyword, setMatchedKeyword] = useState<string | null>(null);
   const [type, setType] = useState<TransactionType>('gasto');
   const [selectedAccountId, setSelectedAccountId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMsi, setIsMsi] = useState(false);
+  const [msiMonths, setMsiMonths] = useState<number>(3);
+
+  const handleConceptChange = (text: string) => {
+    setConcept(text);
+    if (!userEditedCategory) {
+      const prediction = predictCategory(text);
+      if (prediction) {
+        setCategory(prediction.category);
+        setAutofilledCategory(prediction.category);
+        setMatchedKeyword(prediction.matchedKeyword);
+      } else if (autofilledCategory) {
+        setCategory(CATEGORIES[0]);
+        setAutofilledCategory(null);
+        setMatchedKeyword(null);
+      }
+    }
+  };
+
+  const handleSelectCategory = (cat: string) => {
+    setCategory(cat);
+    setUserEditedCategory(true);
+    setAutofilledCategory(null);
+    setMatchedKeyword(null);
+  };
+
+  const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
+  const isCreditAccount = selectedAccount?.account_type === 'credito';
+  const parsedAmount = parseFloat(amount) || 0;
+  const rewards = calculateTransactionRewards(
+    selectedAccount?.bank_id || selectedAccount?.name,
+    selectedAccount?.card_product,
+    parsedAmount,
+    category || concept
+  );
 
   const loadData = useCallback(async () => {
     try {
@@ -104,17 +148,32 @@ export const TransactionsScreen: React.FC<{ onBack: () => void }> = ({ onBack })
     }
     setCreateError('');
     setIsSubmitting(true);
+
+    const isMsiApplied = isCreditAccount && type === 'gasto' && isMsi;
+    const msiMonthly = isMsiApplied && parsedAmount > 0 ? Number((parsedAmount / msiMonths).toFixed(2)) : null;
+
     try {
       await api.createTransaction({
         account_id: selectedAccountId,
-        amount: parseFloat(amount) || 0,
+        amount: parsedAmount.toString(),
         type,
         concept: concept.trim(),
         category,
+        is_msi: isMsiApplied,
+        msi_months: isMsiApplied ? msiMonths : null,
+        msi_monthly_amount: msiMonthly,
+        cashback_earned: rewards.hasRewards && rewards.cashback ? rewards.cashback : null,
+        points_earned: rewards.hasRewards && rewards.points ? rewards.points : null,
       });
       setModalOpen(false);
       setAmount('');
       setConcept('');
+      setCategory(CATEGORIES[0]);
+      setUserEditedCategory(false);
+      setAutofilledCategory(null);
+      setMatchedKeyword(null);
+      setIsMsi(false);
+      setMsiMonths(3);
       loadData();
     } catch (err: any) {
       setCreateError(err.message?.toUpperCase() || 'ERROR AL REGISTRAR MOVIMIENTO');
@@ -150,8 +209,7 @@ export const TransactionsScreen: React.FC<{ onBack: () => void }> = ({ onBack })
           {
             backgroundColor: colors.bgBase,
             borderBottomColor: colors.borderColor,
-            paddingTop: topInset,
-            height: (isMobile ? 56 : 64) + topInset,
+            height: isMobile ? 52 : 64,
           },
           isMobile && styles.headerMobile,
         ]}
@@ -168,6 +226,8 @@ export const TransactionsScreen: React.FC<{ onBack: () => void }> = ({ onBack })
             },
           ]}
           activeOpacity={0.7}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Volver al panel"
         >
           <ArrowLeft size={16} color={colors.textPrimary} strokeWidth={2.5} />
           <Text style={[styles.backBtnText, { color: colors.textPrimary }]}>
@@ -177,10 +237,10 @@ export const TransactionsScreen: React.FC<{ onBack: () => void }> = ({ onBack })
 
         <View style={styles.headerTitleCenter}>
           <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
-            LIBRO DE MOVIMIENTOS
+            LIBRO CONTABLE
           </Text>
           <Text style={[styles.headerSub, { color: colors.accent }]}>
-            // HISTORIAL CONTABLE DE FLUJO
+            // HISTORIAL DE FLUJO
           </Text>
         </View>
 
@@ -196,6 +256,8 @@ export const TransactionsScreen: React.FC<{ onBack: () => void }> = ({ onBack })
             },
           ]}
           activeOpacity={0.8}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Nuevo movimiento"
         >
           <Plus size={16} color="#000000" strokeWidth={3} />
           {!isMobile && <Text style={styles.addBtnText}>NUEVO MOVIMIENTO</Text>}
@@ -231,6 +293,7 @@ export const TransactionsScreen: React.FC<{ onBack: () => void }> = ({ onBack })
                 onPress={() => setFilterType(f.id)}
                 style={[
                   styles.filterBtn,
+                  isMobile && styles.filterBtnMobile,
                   {
                     borderColor: isActive ? colors.accent : colors.borderColor,
                     backgroundColor: isActive ? colors.accentSubtle : colors.bgSurface,
@@ -239,12 +302,15 @@ export const TransactionsScreen: React.FC<{ onBack: () => void }> = ({ onBack })
                   },
                 ]}
                 activeOpacity={0.7}
+                hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+                accessibilityLabel={`Filtrar por ${f.label}`}
               >
                 <Text
                   style={[
                     styles.filterBtnText,
                     { color: isActive ? colors.accent : colors.textPrimary },
                   ]}
+                  numberOfLines={1}
                 >
                   {f.label}
                 </Text>
@@ -359,6 +425,27 @@ export const TransactionsScreen: React.FC<{ onBack: () => void }> = ({ onBack })
                         <Text style={[styles.dateText, { color: colors.textMuted }]}>
                           {tx.date ? new Date(tx.date).toLocaleDateString() : 'HOY'}
                         </Text>
+                        {Boolean(tx.is_msi && tx.msi_months) && (
+                          <View style={[styles.msiBadge, { borderColor: colors.accentWarning, backgroundColor: colors.accentWarningSubtle }]}>
+                            <Text style={[styles.msiBadgeText, { color: colors.accentWarning }]}>
+                              {tx.msi_months} MSI · ${tx.msi_monthly_amount ? parseFloat(String(tx.msi_monthly_amount)).toFixed(2) : ''}/m
+                            </Text>
+                          </View>
+                        )}
+                        {Boolean(tx.cashback_earned && parseFloat(String(tx.cashback_earned)) > 0) && (
+                          <View style={[styles.rewardBadge, { borderColor: colors.accentSuccess, backgroundColor: colors.accentSuccessSubtle }]}>
+                            <Text style={[styles.rewardBadgeText, { color: colors.accentSuccess }]}>
+                              +${parseFloat(String(tx.cashback_earned)).toFixed(2)} CASHBACK
+                            </Text>
+                          </View>
+                        )}
+                        {Boolean(tx.points_earned && Number(tx.points_earned) > 0) && (
+                          <View style={[styles.rewardBadge, { borderColor: '#00b0ff', backgroundColor: 'rgba(0, 176, 255, 0.1)' }]}>
+                            <Text style={[styles.rewardBadgeText, { color: '#00b0ff' }]}>
+                              +{Number(tx.points_earned).toLocaleString()} PTS
+                            </Text>
+                          </View>
+                        )}
                       </View>
                     </View>
                   </View>
@@ -396,7 +483,10 @@ export const TransactionsScreen: React.FC<{ onBack: () => void }> = ({ onBack })
 
       {/* Modal Registrar Movimiento */}
       <Modal visible={modalOpen} transparent animationType="fade" onRequestClose={() => setModalOpen(false)}>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalOverlay}
+        >
           <TouchableOpacity
             style={styles.modalBackdrop}
             activeOpacity={1}
@@ -409,7 +499,8 @@ export const TransactionsScreen: React.FC<{ onBack: () => void }> = ({ onBack })
                 backgroundColor: colors.bgBase,
                 borderColor: colors.borderColor,
                 shadowColor: colors.shadowColor,
-                width: isMobile ? '92%' : 480,
+                width: isMobile ? '94%' : 480,
+                maxWidth: 480,
                 ...(Platform.OS === 'web' ? { boxShadow: `8px 8px 0px 0px ${colors.shadowColor}` } : {}),
               },
             ]}
@@ -423,12 +514,18 @@ export const TransactionsScreen: React.FC<{ onBack: () => void }> = ({ onBack })
                 onPress={() => setModalOpen(false)}
                 style={[styles.modalCloseBtn, { borderColor: colors.borderColor, backgroundColor: colors.bgSurface }]}
                 activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityLabel="Cerrar modal"
               >
                 <X size={16} color={colors.textPrimary} strokeWidth={2.5} />
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalForm} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={styles.modalForm}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
               <View style={styles.formGroup}>
                 <Text style={[styles.label, { color: colors.textSecondary }]}>TIPO DE OPERACIÓN</Text>
                 <View style={styles.typeRow}>
@@ -483,17 +580,46 @@ export const TransactionsScreen: React.FC<{ onBack: () => void }> = ({ onBack })
                   placeholder="Ej. Almuerzo o Compra de Software"
                   placeholderTextColor={colors.textMuted}
                   value={concept}
-                  onChangeText={setConcept}
+                  onChangeText={handleConceptChange}
                 />
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>CATEGORÍA</Text>
+                <View style={styles.categoryLabelRow}>
+                  <Text style={[styles.label, { color: colors.textSecondary, marginBottom: 0 }]}>CATEGORÍA</Text>
+                  {autofilledCategory ? (
+                    <View style={[styles.autoCategoryBadge, { backgroundColor: 'rgba(254, 157, 1, 0.15)', borderColor: '#FE9D01' }]}>
+                      <Sparkles size={10} color="#FE9D01" strokeWidth={2.5} />
+                      <Text style={[styles.autoCategoryBadgeText, { color: '#FE9D01' }]}>
+                        AUTO: {matchedKeyword ? `"${matchedKeyword.toUpperCase()}"` : 'CATÁLOGO'}
+                      </Text>
+                    </View>
+                  ) : userEditedCategory && predictCategory(concept) ? (
+                    <TouchableOpacity
+                      onPress={() => {
+                        const pred = predictCategory(concept);
+                        if (pred) {
+                          setCategory(pred.category);
+                          setUserEditedCategory(false);
+                          setAutofilledCategory(pred.category);
+                          setMatchedKeyword(pred.matchedKeyword);
+                        }
+                      }}
+                      style={[styles.restoreAutoBadge, { borderColor: colors.borderColor, backgroundColor: colors.bgSurface }]}
+                      activeOpacity={0.7}
+                    >
+                      <Sparkles size={10} color={colors.textSecondary} strokeWidth={2} />
+                      <Text style={[styles.restoreAutoBadgeText, { color: colors.textSecondary }]}>
+                        RESTAURAR: {predictCategory(concept)?.category.toUpperCase()}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
                   {CATEGORIES.map((cat) => (
                     <TouchableOpacity
                       key={cat}
-                      onPress={() => setCategory(cat)}
+                      onPress={() => handleSelectCategory(cat)}
                       style={[
                         styles.categoryChip,
                         {
@@ -603,6 +729,132 @@ export const TransactionsScreen: React.FC<{ onBack: () => void }> = ({ onBack })
                 )}
               </View>
 
+              {/* Live Rewards Preview Badge */}
+              {rewards.hasRewards && parsedAmount > 0 && type === 'gasto' && (
+                <View
+                  style={[
+                    styles.rewardsBanner,
+                    {
+                      borderColor: rewards.badgeColor,
+                      backgroundColor: colors.bgBase,
+                    },
+                  ]}
+                >
+                  <View style={styles.rewardsHeader}>
+                    <Sparkles size={13} color={rewards.badgeColor} strokeWidth={2.5} />
+                    <Text style={[styles.rewardsTag, { color: rewards.badgeColor }]}>
+                      BENEFICIO ESTIMADO
+                    </Text>
+                  </View>
+                  <Text style={[styles.rewardsTitle, { color: colors.textPrimary }]}>
+                    {rewards.label}
+                  </Text>
+                  {rewards.type === 'points' && rewards.estimatedMxn > 0 && (
+                    <Text style={[styles.rewardsEquiv, { color: colors.textSecondary }]}>
+                      ≈ ${rewards.estimatedMxn.toFixed(2)} MXN equivalentes
+                    </Text>
+                  )}
+                </View>
+              )}
+
+              {/* MSI Deferred Financing Engine */}
+              {isCreditAccount && type === 'gasto' && (
+                <View
+                  style={[
+                    styles.msiContainer,
+                    {
+                      borderColor: isMsi ? colors.accent : colors.borderColor,
+                      backgroundColor: colors.bgBase,
+                    },
+                  ]}
+                >
+                  <TouchableOpacity
+                    style={styles.msiToggleRow}
+                    onPress={() => setIsMsi((prev) => !prev)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.msiToggleLeft}>
+                      <CreditCard size={15} color={isMsi ? colors.accent : colors.textPrimary} strokeWidth={2.5} />
+                      <Text style={[styles.msiToggleText, { color: colors.textPrimary }]}>
+                        ¿COMPRA A MESES SIN INTERESES (MSI)?
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.msiCheckbox,
+                        {
+                          borderColor: isMsi ? colors.accent : colors.borderColor,
+                          backgroundColor: isMsi ? colors.accent : 'transparent',
+                        },
+                      ]}
+                    >
+                      {isMsi && <Check size={12} color="#000000" strokeWidth={3} />}
+                    </View>
+                  </TouchableOpacity>
+
+                  {isMsi && (
+                    <View style={styles.msiExpandedBody}>
+                      <Text style={[styles.msiLabel, { color: colors.textSecondary }]}>
+                        SELECCIONA PLAZO EN MESES:
+                      </Text>
+                      <View style={styles.msiPillsGrid}>
+                        {[3, 6, 9, 12, 18, 24].map((m) => {
+                          const isSelected = msiMonths === m;
+                          return (
+                            <TouchableOpacity
+                              key={m}
+                              style={[
+                                styles.msiPill,
+                                {
+                                  borderColor: isSelected ? colors.accent : colors.borderMuted,
+                                  backgroundColor: isSelected ? colors.accent : colors.bgSurface,
+                                },
+                              ]}
+                              onPress={() => setMsiMonths(m)}
+                              activeOpacity={0.8}
+                            >
+                              <Text
+                                style={[
+                                  styles.msiPillLabel,
+                                  { color: isSelected ? '#000000' : colors.textPrimary },
+                                ]}
+                              >
+                                {m} MSI
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+
+                      {parsedAmount > 0 && (
+                        <View
+                          style={[
+                            styles.msiSummaryBox,
+                            {
+                              borderColor: colors.borderMuted,
+                              backgroundColor: colors.bgSurface,
+                            },
+                          ]}
+                        >
+                          <Text style={[styles.msiSummaryTitle, { color: colors.textSecondary }]}>
+                            IMPACTO EN MENSUALIDAD:
+                          </Text>
+                          <Text style={[styles.msiSummaryValue, { color: colors.accent }]}>
+                            ${(parsedAmount / msiMonths).toLocaleString('es-MX', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })} / mes
+                          </Text>
+                          <Text style={[styles.msiSummarySub, { color: colors.textMuted }]}>
+                            // Cuota mensual diferida durante {msiMonths} meses sin generar intereses
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                </View>
+              )}
+
               {/* Error Alert */}
               {createError ? (
                 <View
@@ -646,7 +898,7 @@ export const TransactionsScreen: React.FC<{ onBack: () => void }> = ({ onBack })
               </TouchableOpacity>
             </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -734,7 +986,14 @@ const styles = StyleSheet.create({
   filterBtn: {
     borderWidth: 1.5,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 8,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterBtnMobile: {
+    flex: 1,
+    paddingHorizontal: 4,
   },
   filterBtnText: {
     fontSize: 10,
@@ -1044,5 +1303,170 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
     color: '#000000',
     letterSpacing: 0.8,
+  },
+  msiBadge: {
+    borderWidth: 1.5,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  msiBadgeText: {
+    fontSize: 9,
+    fontWeight: '900',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    letterSpacing: 0.4,
+  },
+  rewardBadge: {
+    borderWidth: 1.5,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  rewardBadgeText: {
+    fontSize: 9,
+    fontWeight: '900',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    letterSpacing: 0.4,
+  },
+  rewardsBanner: {
+    borderWidth: 2,
+    padding: 12,
+    marginBottom: 16,
+    gap: 4,
+  },
+  rewardsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  rewardsTag: {
+    fontSize: 9.5,
+    fontWeight: '900',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    letterSpacing: 0.8,
+  },
+  rewardsTitle: {
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0.6,
+  },
+  rewardsEquiv: {
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+  },
+  msiContainer: {
+    borderWidth: 2,
+    padding: 12,
+    marginBottom: 16,
+  },
+  msiToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  msiToggleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  msiToggleText: {
+    fontSize: 10.5,
+    fontWeight: '900',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    letterSpacing: 0.8,
+  },
+  msiCheckbox: {
+    width: 22,
+    height: 22,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  msiExpandedBody: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#222222',
+    gap: 10,
+  },
+  msiLabel: {
+    fontSize: 9.5,
+    fontWeight: '900',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    letterSpacing: 0.8,
+  },
+  msiPillsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  msiPill: {
+    borderWidth: 1.5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  msiPillLabel: {
+    fontSize: 11,
+    fontWeight: '900',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    letterSpacing: 0.6,
+  },
+  msiSummaryBox: {
+    borderWidth: 1.5,
+    padding: 10,
+    gap: 3,
+  },
+  msiSummaryTitle: {
+    fontSize: 9,
+    fontWeight: '900',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    letterSpacing: 0.8,
+  },
+  msiSummaryValue: {
+    fontSize: 15,
+    fontWeight: '900',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    letterSpacing: 0.5,
+  },
+  msiSummarySub: {
+    fontSize: 9,
+    fontWeight: '700',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+  },
+  categoryLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  autoCategoryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 2,
+  },
+  autoCategoryBadgeText: {
+    fontSize: 9,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  restoreAutoBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 2,
+  },
+  restoreAutoBadgeText: {
+    fontSize: 9,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
 });

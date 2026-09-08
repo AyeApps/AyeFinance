@@ -1,4 +1,4 @@
-export type AccountType = 'corriente' | 'ahorro' | 'inversion';
+export type AccountType = 'debito' | 'credito' | 'ahorro' | 'inversion' | 'corriente';
 export type TransactionType = 'ingreso' | 'gasto' | 'transferencia';
 export type RecurringType = 'ingreso_fijo' | 'gasto_fijo' | 'mensualidad';
 export type Frequency = 'semanal' | 'quincenal' | 'mensual';
@@ -29,6 +29,11 @@ export interface Account {
   icon: string;
   bank_id?: string;
   is_liquid: boolean;
+  card_product?: string | null;
+  credit_limit?: string | number | null;
+  cut_off_day?: number | null;
+  payment_due_day?: number | null;
+  payment_grace_days?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -40,6 +45,13 @@ export interface AccountSummary {
   grand_total: string;
   projected_grand_total: string;
   accounts_count: number;
+  today_expenses?: number | string;
+  today_income?: number | string;
+  month_expenses?: number | string;
+  month_income?: number | string;
+  month_cashback?: number | string;
+  month_points?: number;
+  by_account?: Record<string, any>;
 }
 
 export interface Transaction {
@@ -55,6 +67,13 @@ export interface Transaction {
   notes?: string | null;
   is_recurring: boolean;
   recurring_item_id?: string | null;
+  is_msi?: boolean;
+  msi_months?: number | null;
+  msi_monthly_amount?: string | number | null;
+  cashback_earned?: string | number | null;
+  points_earned?: number | null;
+  is_external?: boolean;
+  external_account_name?: string | null;
   created_at: string;
   updated_at: string;
 }

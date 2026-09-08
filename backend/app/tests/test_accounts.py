@@ -24,8 +24,8 @@ async def test_create_and_list_accounts(client: AsyncClient, auth_headers):
     list_resp = await client.get("/api/v1/accounts/", headers=auth_headers)
     assert list_resp.status_code == 200
     accounts = list_resp.json()
-    assert len(accounts) == 1
-    assert accounts[0]["id"] == created_acc["id"]
+    assert any(a["id"] == created_acc["id"] for a in accounts)
+    assert any(a["name"] == "Efectivo" for a in accounts)
 
 
 @pytest.mark.asyncio
@@ -74,10 +74,12 @@ async def test_horizontal_isolation_accounts(
     )
     user1_acc_id = resp.json()["id"]
 
-    # User 2 lists accounts -> should be empty
+    # User 2 lists accounts -> should only contain User 2 accounts and not User 1 account
     user2_list = await client.get("/api/v1/accounts/", headers=auth_headers_user_2)
     assert user2_list.status_code == 200
-    assert len(user2_list.json()) == 0
+    user2_accs = user2_list.json()
+    assert not any(a["id"] == user1_acc_id for a in user2_accs)
+    assert all(a["user_id"] == "user_test_456" for a in user2_accs)
 
     # User 2 tries to access User 1 account directly -> should be 404
     user2_detail = await client.get(f"/api/v1/accounts/{user1_acc_id}", headers=auth_headers_user_2)
@@ -98,10 +100,98 @@ async def test_soft_delete_account(client: AsyncClient, auth_headers):
     del_resp = await client.delete(f"/api/v1/accounts/{acc_id}", headers=auth_headers)
     assert del_resp.status_code == 204
 
-    # List -> empty
+    # List -> should not contain deleted account
     list_resp = await client.get("/api/v1/accounts/", headers=auth_headers)
-    assert len(list_resp.json()) == 0
+    assert list_resp.status_code == 200
+    assert not any(a["id"] == acc_id for a in list_resp.json())
 
     # Detail -> 404
     detail_resp = await client.get(f"/api/v1/accounts/{acc_id}", headers=auth_headers)
     assert detail_resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_create_and_update_credit_card_account(client: AsyncClient, auth_headers):
+    payload = {
+        "name": "Banamex Joy",
+        "account_type": "credito",
+        "currency": "MXN",
+        "initial_balance": "0.00",
+        "color": "#E60045",
+        "icon": "credit_card",
+        "bank_id": "banamex",
+        "is_liquid": True,
+        "card_product": "Tarjeta Joy Citibanamex",
+        "credit_limit": "45000.00",
+        "cut_off_day": 6,
+        "payment_due_day": 6,
+        "payment_grace_days": 30,
+    }
+    create_resp = await client.post("/api/v1/accounts/", json=payload, headers=auth_headers)
+    assert create_resp.status_code == 201
+    data = create_resp.json()
+    assert data["card_product"] == "Tarjeta Joy Citibanamex"
+    assert data["credit_limit"] == "45000.00"
+    assert data["cut_off_day"] == 6
+    assert data["payment_due_day"] == 6
+    assert data["payment_grace_days"] == 30
+    assert data["bank_id"] == "banamex"
+
+    acc_id = data["id"]
+
+    # Test update
+    patch_resp = await client.patch(
+        f"/api/v1/accounts/{acc_id}",
+        json={"credit_limit": "60000.00", "cut_off_day": 18, "payment_grace_days": 25},
+        headers=auth_headers,
+    )
+    assert patch_resp.status_code == 200
+    updated_data = patch_resp.json()
+    assert updated_data["credit_limit"] == "60000.00"
+    assert updated_data["cut_off_day"] == 18
+    assert updated_data["payment_due_day"] == 6
+    assert updated_data["payment_grace_days"] == 25
+
+
+@pytest.mark.asyncio
+async def test_create_debit_card_account_with_product(client: AsyncClient, auth_headers):
+    payload = {
+        "name": "Nómina BBVA",
+        "account_type": "debito",
+        "currency": "MXN",
+        "initial_balance": "8500.00",
+        "color": "#004481",
+        "icon": "account_balance",
+        "bank_id": "bbva",
+        "is_liquid": True,
+        "card_product": "Nómina BBVA",
+    }
+    create_resp = await client.post("/api/v1/accounts/", json=payload, headers=auth_headers)
+    assert create_resp.status_code == 201
+    data = create_resp.json()
+    assert data["card_product"] == "Nómina BBVA"
+    assert data["bank_id"] == "bbva"
+    assert data["account_type"] == "debito"
+    assert data["credit_limit"] is None
+
+
+@pytest.mark.asyncio
+async def test_default_cash_account_and_deletion(client: AsyncClient, auth_headers):
+    # A user calling list accounts should automatically receive the default 'Efectivo' account
+    resp = await client.get("/api/v1/accounts/", headers=auth_headers)
+    assert resp.status_code == 200
+    accs = resp.json()
+    efectivo = next((a for a in accs if a["name"] == "Efectivo"), None)
+    assert efectivo is not None
+    assert efectivo["is_liquid"] is True
+    assert efectivo["currency"] == "MXN"
+
+    # If the user deletes "Efectivo", it should be deleted and NOT recreated
+    del_resp = await client.delete(f"/api/v1/accounts/{efectivo['id']}", headers=auth_headers)
+    assert del_resp.status_code == 204
+
+    # Fetch again: Efectivo should not be in the list anymore
+    resp2 = await client.get("/api/v1/accounts/", headers=auth_headers)
+    assert resp2.status_code == 200
+    accs2 = resp2.json()
+    assert not any(a["name"] == "Efectivo" for a in accs2)

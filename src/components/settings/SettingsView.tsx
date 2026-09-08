@@ -164,8 +164,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onBack }) => {
             backgroundColor: colors.bgBase,
             borderBottomColor: colors.borderColor,
             borderBottomWidth: 2,
-            paddingTop: topInset,
-            height: (isMobile ? 60 : 70) + topInset,
+            height: isMobile ? 54 : 64,
           },
           isMobile && styles.headerBarMobile,
         ]}
@@ -182,11 +181,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onBack }) => {
           ]}
           onPress={onBack}
           activeOpacity={0.7}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityLabel="Volver al panel"
         >
           <ArrowLeft size={16} color={colors.textPrimary} strokeWidth={2.5} />
           <Text style={[styles.backBtnText, { color: colors.textPrimary }]}>
-            VOLVER AL PANEL
+            {isMobile ? 'VOLVER' : 'VOLVER AL PANEL'}
           </Text>
         </TouchableOpacity>
 

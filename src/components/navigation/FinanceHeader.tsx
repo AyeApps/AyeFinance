@@ -39,6 +39,7 @@ export const FinanceHeader: React.FC<FinanceHeaderProps> = ({
 }) => {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
+  const isSmallMobile = width < 380;
 
   const { colors, toggleTheme, isDark } = useTheme();
   const { language, toggleLanguage } = useTranslation();
@@ -94,6 +95,7 @@ export const FinanceHeader: React.FC<FinanceHeaderProps> = ({
             ]}
             onPress={openSidebar}
             activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             accessibilityLabel="Abrir menú"
           >
             <Menu size={18} color={colors.textPrimary} strokeWidth={2.5} />
@@ -101,6 +103,7 @@ export const FinanceHeader: React.FC<FinanceHeaderProps> = ({
 
           {/* Brand Anchor */}
           <View style={styles.brandGroup}>
+            {!isSmallMobile && (
             <View
               style={[
                 styles.logoBadge,
@@ -114,6 +117,7 @@ export const FinanceHeader: React.FC<FinanceHeaderProps> = ({
             >
               <AyeLogo width={32} color={colors.textInvert} />
             </View>
+            )}
 
             <View style={styles.brandMeta}>
               <View style={styles.brandTitleRow}>
@@ -172,7 +176,7 @@ export const FinanceHeader: React.FC<FinanceHeaderProps> = ({
           ) : null}
 
           {/* Refresh Action */}
-          {onRefresh && (
+          {onRefresh && !isSmallMobile && (
             <TouchableOpacity
               style={[
                 styles.utilityBtn,
@@ -186,6 +190,7 @@ export const FinanceHeader: React.FC<FinanceHeaderProps> = ({
               onPress={onRefresh}
               activeOpacity={0.7}
               disabled={isRefreshing}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               accessibilityLabel="Refrescar datos"
             >
               <RefreshCw size={15} color={isRefreshing ? colors.accent : colors.textPrimary} />
@@ -254,6 +259,7 @@ export const FinanceHeader: React.FC<FinanceHeaderProps> = ({
               ]}
               onPress={() => setShowProfileMenu(!showProfileMenu)}
               activeOpacity={0.7}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
               accessibilityLabel="Perfil de usuario"
             >
               <View

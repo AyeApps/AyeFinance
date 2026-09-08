@@ -10,20 +10,24 @@ const isWeb = Platform.OS === 'web';
 
 export const authStorage = {
   async setTokens(accessToken: string, refreshToken?: string): Promise<void> {
-    if (isWeb) {
+    try {
       await AsyncStorage.setItem(TOKEN_KEY, accessToken);
       if (refreshToken) {
         await AsyncStorage.setItem(REFRESH_KEY, refreshToken);
       }
-    } else {
-      await SecureStore.setItemAsync(TOKEN_KEY, accessToken, {
-        keychainAccessible: SecureStore.WHEN_UNLOCKED,
-      });
-      if (refreshToken) {
-        await SecureStore.setItemAsync(REFRESH_KEY, refreshToken, {
+    } catch {}
+
+    if (!isWeb) {
+      try {
+        await SecureStore.setItemAsync(TOKEN_KEY, accessToken, {
           keychainAccessible: SecureStore.WHEN_UNLOCKED,
         });
-      }
+        if (refreshToken) {
+          await SecureStore.setItemAsync(REFRESH_KEY, refreshToken, {
+            keychainAccessible: SecureStore.WHEN_UNLOCKED,
+          });
+        }
+      } catch {}
     }
   },
 
