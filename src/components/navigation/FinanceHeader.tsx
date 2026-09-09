@@ -24,7 +24,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useUIStore } from '../../store/useUIStore';
 import { useTranslation } from '../../store/useLanguageStore';
-import { AyeLogo } from '../ui/AyeLogo';
+import { AyeFinanceLogo } from '../ui/AyeFinanceLogo';
 
 interface FinanceHeaderProps {
   onRefresh?: () => void;
@@ -104,19 +104,7 @@ export const FinanceHeader: React.FC<FinanceHeaderProps> = ({
           {/* Brand Anchor */}
           <View style={styles.brandGroup}>
             {!isSmallMobile && (
-            <View
-              style={[
-                styles.logoBadge,
-                {
-                  backgroundColor: colors.accent,
-                  borderColor: colors.borderColor,
-                  shadowColor: colors.shadowColor,
-                  ...(Platform.OS === 'web' ? { boxShadow: `3px 3px 0px 0px ${colors.shadowColor}` } : {}),
-                },
-              ]}
-            >
-              <AyeLogo width={32} color={colors.textInvert} />
-            </View>
+              <AyeFinanceLogo size={36} />
             )}
 
             <View style={styles.brandMeta}>

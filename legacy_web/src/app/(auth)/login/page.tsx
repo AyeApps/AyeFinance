@@ -6,7 +6,7 @@ import { apiFetch } from '@/lib/api';
 import { setStoredToken, setStoredUser } from '@/lib/auth';
 import { useTheme } from '@/lib/theme';
 import { AuthResponse } from '@/types';
-import { AyeLogo } from '@/components/ui/AyeLogo';
+import { AyeFinanceLogo } from '@/components/ui/AyeFinanceLogo';
 import './AuthScreen.css';
 
 export default function LoginPage() {
@@ -225,7 +225,7 @@ export default function LoginPage() {
             {/* Title Section */}
             <div className="ayetasks-title-section">
               <div className="ayetasks-auth-logo-box">
-                <AyeLogo width={56} color="#FE9D01" />
+                <AyeFinanceLogo size={56} />
               </div>
               <h1 className="ayetasks-hero-title">
                 {t.title}

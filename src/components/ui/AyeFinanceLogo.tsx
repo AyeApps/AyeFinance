@@ -5,18 +5,20 @@ import Svg, { Rect, Path, Polygon, G } from 'react-native-svg';
 export interface AyeFinanceLogoProps {
   size?: number;
   variant?: 'official' | 'monogram' | 'light';
+  color?: string;
   style?: StyleProp<ViewStyle>;
 }
 
 export const AyeFinanceLogo: React.FC<AyeFinanceLogoProps> = ({
   size = 48,
   variant = 'official',
+  color,
   style,
 }) => {
   const isLight = variant === 'light';
   const isMonogram = variant === 'monogram';
 
-  const glyphColor = isLight ? '#000000' : '#FFFFFF';
+  const glyphColor = color || (isLight ? '#000000' : '#FFFFFF');
   const amberColor = isLight ? '#E68A00' : '#FE9D01';
   const amberStroke = isLight ? '#FFFFFF' : '#000000';
   const borderColor = isLight ? '#000000' : '#FFFFFF';

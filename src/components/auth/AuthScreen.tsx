@@ -25,7 +25,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useTranslation } from '../../store/useLanguageStore';
-import { AyeLogo } from '../ui/AyeLogo';
+import { AyeFinanceLogo } from '../ui/AyeFinanceLogo';
 import { api, getAuthApiBaseUrl } from '../../services/api';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -526,7 +526,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onBack }) => {
             {/* Title Section */}
             <View style={styles.titleSection}>
               <View style={styles.authLogoBox}>
-                <AyeLogo width={56} color={colors.accent} />
+                <AyeFinanceLogo size={56} />
               </View>
               <Text style={[styles.heroTitle, { color: colors.textPrimary }]}>
                 AYEFINANCE

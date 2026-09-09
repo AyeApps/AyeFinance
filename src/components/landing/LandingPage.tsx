@@ -11,7 +11,7 @@ import {
 import { Landmark, Receipt, CalendarClock, Sun, Moon, Languages, ShieldCheck, ArrowUpRight } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useTranslation } from '../../store/useLanguageStore';
-import { AyeLogo } from '../ui/AyeLogo';
+import { AyeFinanceLogo } from '../ui/AyeFinanceLogo';
 import { trackAuthOpened } from '../../services/analytics';
 
 interface LandingPageProps {
@@ -74,7 +74,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStartAuth }) => {
       {/* 1. Atelier Top Navigation Bar */}
       <View style={[styles.navbar, { borderBottomColor: colors.borderColor }]}>
         <View style={styles.navBrand}>
-          <AyeLogo width={36} color={colors.accent} />
+          <AyeFinanceLogo size={36} />
           <View style={styles.brandTitleCol}>
             <Text style={[styles.brandTitle, { color: colors.textPrimary }]}>AYEFINANCE</Text>
             <Text style={[styles.brandSub, { color: colors.accent }]}>Atelier Financial Suite</Text>
@@ -274,7 +274,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStartAuth }) => {
       {/* 5. Minimalist Footer */}
       <View style={[styles.footer, { borderTopColor: colors.borderColor }]}>
         <View style={styles.footerBrandRow}>
-          <AyeLogo width={28} color={colors.accent} />
+          <AyeFinanceLogo size={28} />
           <Text style={[styles.footerBrandText, { color: colors.textPrimary }]}>AyeFinance</Text>
         </View>
         <Text style={[styles.footerText, { color: colors.textSecondary }]}>{t.footerText}</Text>

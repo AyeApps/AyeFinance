@@ -29,7 +29,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useTheme } from '../../hooks/useTheme';
 import { useUIStore } from '../../store/useUIStore';
 import { useTranslation } from '../../store/useLanguageStore';
-import { AyeLogo } from '../ui/AyeLogo';
+import { AyeFinanceLogo } from '../ui/AyeFinanceLogo';
 
 interface SidebarDrawerProps {
   currentScreen: string;
@@ -117,19 +117,7 @@ export const SidebarDrawer: React.FC<SidebarDrawerProps> = ({ currentScreen, onN
             {/* Header: Brand Anchor & Close Button */}
             <View style={[styles.drawerHeader, { borderBottomColor: colors.borderMuted }]}>
               <View style={styles.brandRow}>
-                <View
-                  style={[
-                    styles.logoBadge,
-                    {
-                      backgroundColor: colors.accent,
-                      borderColor: colors.borderColor,
-                      shadowColor: colors.shadowColor,
-                      ...(Platform.OS === 'web' ? { boxShadow: `3px 3px 0px 0px ${colors.shadowColor}` } : {}),
-                    },
-                  ]}
-                >
-                  <AyeLogo width={30} color={colors.textInvert} />
-                </View>
+                <AyeFinanceLogo size={36} />
 
                 <View style={styles.brandTextGroup}>
                   <Text style={[styles.brandTitleText, { color: colors.textPrimary }]}>
