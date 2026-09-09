@@ -192,6 +192,26 @@ export const api = {
     return res.json();
   },
 
+  async updateAccount(id: string, data: any): Promise<Account> {
+    const token = await authStorage.getAccessToken();
+    const res = await fetch(`${getApiBaseUrl()}/accounts/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const msg = Array.isArray(err.detail)
+        ? err.detail.map((e: any) => e.msg).join(', ')
+        : err.detail || 'Error al actualizar cuenta';
+      throw new Error(msg);
+    }
+    return res.json();
+  },
+
   async deleteAccount(id?: string): Promise<void> {
     const token = await authStorage.getAccessToken();
     if (id) {

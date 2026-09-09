@@ -15,7 +15,7 @@ import {
   KeyboardAvoidingView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, Plus, Trash2, Landmark, PiggyBank, LineChart, X, CreditCard, Calendar, TrendingUp, ShieldCheck, Zap } from 'lucide-react-native';
+import { ArrowLeft, Plus, Trash2, Landmark, PiggyBank, LineChart, X, CreditCard, Calendar, TrendingUp, ShieldCheck, Zap, Pencil, Percent, Check } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { api } from '../../services/api';
 import { Account, AccountType } from '../../types';
@@ -26,6 +26,7 @@ import {
   evaluateFinancingCycle,
   evaluateAnnuityExemption,
   calculateDailyYield,
+  POPULAR_YIELD_PRESETS,
 } from '../../utils/cardBenefits';
 import {
   MexicanBankId,
@@ -152,6 +153,43 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
   const [paymentGraceDays, setPaymentGraceDays] = useState('20');
   const [isNameManuallyEdited, setIsNameManuallyEdited] = useState(false);
 
+  // Yield state for new account
+  const [hasYield, setHasYield] = useState(false);
+  const [annualYieldRate, setAnnualYieldRate] = useState('');
+
+  // Edit Account Modal state
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editHasYield, setEditHasYield] = useState(false);
+  const [editAnnualYieldRate, setEditAnnualYieldRate] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  const applyBankYieldPreset = (bankId: MexicanBankId) => {
+    if (accountInstrument === 'credito') return;
+    const bId = String(bankId).toLowerCase();
+    const n = name.toLowerCase();
+    if (bId === 'nu' || n.includes('nu')) {
+      setHasYield(true);
+      setAnnualYieldRate('13.5');
+    } else if (bId === 'mercadopago' || n.includes('mercado') || n.includes('klar') || n.includes('uala')) {
+      setHasYield(true);
+      setAnnualYieldRate('15.0');
+    } else if (n.includes('cetes')) {
+      setHasYield(true);
+      setAnnualYieldRate('11.0');
+    } else if (n.includes('finsus')) {
+      setHasYield(true);
+      setAnnualYieldRate('14.0');
+    } else if (n.includes('stori')) {
+      setHasYield(true);
+      setAnnualYieldRate('15.5');
+    } else if (bId === 'heybanco' || n.includes('hey')) {
+      setHasYield(true);
+      setAnnualYieldRate('11.0');
+    }
+  };
+
   const handleNameChange = (text: string) => {
     setName(text);
     setIsNameManuallyEdited(text.trim().length > 0);
@@ -160,6 +198,7 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
       setSelectedBankId(detected);
       setIsAutoDetected(true);
       setManualOverride(false);
+      applyBankYieldPreset(detected);
     } else if (!manualOverride) {
       setSelectedBankId('generic');
       setIsAutoDetected(false);
@@ -176,6 +215,7 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
     if (!isNameManuallyEdited) {
       setName('');
     }
+    applyBankYieldPreset(bankId);
   };
 
   const recalculateGraceDays = (cutText: string, dueText: string) => {
@@ -263,6 +303,11 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
     setCutOffDay('');
     setPaymentDueDay('');
     setPaymentGraceDays('20');
+    setHasYield(false);
+    setAnnualYieldRate('');
+    if (targetBankId && targetBankId !== 'generic') {
+      applyBankYieldPreset(targetBankId);
+    }
     setModalOpen(true);
   };
 
@@ -283,6 +328,8 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
     setCutOffDay('');
     setPaymentDueDay('');
     setPaymentGraceDays('20');
+    setHasYield(false);
+    setAnnualYieldRate('');
     setModalOpen(false);
   };
 
@@ -317,6 +364,11 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
         color,
         bank_id: selectedBankId,
         card_product: resolvedProduct || undefined,
+        has_yield: type !== 'credito' && hasYield,
+        annual_yield_rate:
+          type !== 'credito' && hasYield && annualYieldRate.trim()
+            ? parseFloat(annualYieldRate.replace(/,/g, '')) || 0
+            : undefined,
         ...(type === 'credito'
           ? {
               credit_limit: creditLimit ? parseFloat(creditLimit.replace(/,/g, '')) || 0 : undefined,
@@ -334,6 +386,64 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
       setIsCreating(false);
     }
   };
+
+  const openEditAccount = (acc: Account, focusYield = false) => {
+    setEditingAccount(acc);
+    setEditName(acc.name);
+    const initialYieldCalc = calculateDailyYield(
+      acc.bank_id || acc.name,
+      acc.card_product,
+      acc.current_balance,
+      acc.has_yield,
+      acc.annual_yield_rate
+    );
+    const isYieldActive = acc.has_yield !== undefined ? acc.has_yield : (initialYieldCalc.hasYield || focusYield);
+    setEditHasYield(isYieldActive);
+    const existingRate = acc.annual_yield_rate
+      ? String(acc.annual_yield_rate)
+      : initialYieldCalc.hasYield
+      ? (initialYieldCalc.annualRate * 100).toFixed(1).replace(/\.0$/, '')
+      : focusYield
+      ? '11.0'
+      : '';
+    setEditAnnualYieldRate(existingRate);
+    setEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingAccount) return;
+    setIsSavingEdit(true);
+    try {
+      const rateNum = editAnnualYieldRate.trim() ? parseFloat(editAnnualYieldRate.replace(/,/g, '')) : null;
+      await api.updateAccount(editingAccount.id, {
+        name: editName.trim() || editingAccount.name,
+        has_yield: editingAccount.account_type !== 'credito' ? editHasYield : false,
+        annual_yield_rate:
+          editingAccount.account_type !== 'credito' && editHasYield
+            ? (rateNum !== null && !isNaN(rateNum) ? rateNum : null)
+            : null,
+      });
+      setEditModalOpen(false);
+      setEditingAccount(null);
+      loadAccounts();
+    } catch (err: any) {
+      alert(err.message || 'Error al actualizar cuenta');
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const totalDailyYield = accounts.reduce((sum, acc) => {
+    if (acc.account_type === 'credito') return sum;
+    const y = calculateDailyYield(acc.bank_id || acc.name, acc.card_product, acc.current_balance, acc.has_yield, acc.annual_yield_rate);
+    return sum + (y.hasYield ? y.dailyYieldMxn : 0);
+  }, 0);
+  const totalMonthlyYield = Number((totalDailyYield * 30).toFixed(2));
+  const totalYieldCapital = accounts.reduce((sum, acc) => {
+    if (acc.account_type === 'credito') return sum;
+    const y = calculateDailyYield(acc.bank_id || acc.name, acc.card_product, acc.current_balance, acc.has_yield, acc.annual_yield_rate);
+    return sum + (y.hasYield ? (parseFloat(acc.current_balance) || 0) : 0);
+  }, 0);
 
   const handleDelete = async (id: string) => {
     try {
@@ -471,6 +581,46 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
           </View>
         ) : (
           <View style={styles.list}>
+            {totalDailyYield > 0 && (
+              <View
+                style={[
+                  styles.yieldSummaryBanner,
+                  {
+                    backgroundColor: colors.bgSurface,
+                    borderColor: '#00e676',
+                    shadowColor: colors.shadowColor,
+                    ...(Platform.OS === 'web' ? { boxShadow: `4px 4px 0px 0px ${colors.shadowColor}` } : {}),
+                  },
+                ]}
+              >
+                <View style={styles.yieldBannerHeader}>
+                  <View style={styles.yieldBannerIconWrap}>
+                    <TrendingUp size={16} color="#00e676" strokeWidth={2.5} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.yieldBannerTitle}>RENDIMIENTO PASIVO TOTAL ESTIMADO</Text>
+                    <Text style={[styles.yieldBannerSub, { color: colors.textSecondary }]}>
+                      Capital generando rendimiento: ${formatMoney(totalYieldCapital)} MXN
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.yieldBannerNumbers}>
+                  <View>
+                    <Text style={[styles.yieldBannerVal, { color: '#00e676' }]}>
+                      +${totalDailyYield.toFixed(2)} MXN
+                    </Text>
+                    <Text style={[styles.yieldBannerSubLabel, { color: colors.textMuted }]}>PROYECCIÓN / DÍA</Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={[styles.yieldBannerVal, { color: colors.textPrimary }]}>
+                      +${totalMonthlyYield.toFixed(2)} MXN
+                    </Text>
+                    <Text style={[styles.yieldBannerSubLabel, { color: colors.textMuted }]}>PROYECCIÓN / MES (30D)</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
             {groupAccountsByBank(accounts).map((group) => {
               const isGeneric = group.bankId === 'generic';
               return (
@@ -683,21 +833,39 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                               </View>
                             </View>
 
-                            <TouchableOpacity
-                              onPress={() => handleDelete(acc.id)}
-                              style={[
-                                styles.deleteBtn,
-                                {
-                                  borderColor: colors.accentDanger,
-                                  backgroundColor: colors.accentDangerSubtle,
-                                },
-                              ]}
-                              activeOpacity={0.7}
-                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                              accessibilityLabel={`Eliminar ${acc.name}`}
-                            >
-                              <Trash2 size={13} color={colors.accentDanger} strokeWidth={2.5} />
-                            </TouchableOpacity>
+                            <View style={styles.cardActionsRow}>
+                              <TouchableOpacity
+                                onPress={() => openEditAccount(acc)}
+                                style={[
+                                  styles.editBtn,
+                                  {
+                                    borderColor: colors.borderColor,
+                                    backgroundColor: colors.bgBase,
+                                  },
+                                ]}
+                                activeOpacity={0.7}
+                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                accessibilityLabel={`Editar ${acc.name}`}
+                              >
+                                <Pencil size={13} color={colors.textSecondary} strokeWidth={2.5} />
+                              </TouchableOpacity>
+
+                              <TouchableOpacity
+                                onPress={() => handleDelete(acc.id)}
+                                style={[
+                                  styles.deleteBtn,
+                                  {
+                                    borderColor: colors.accentDanger,
+                                    backgroundColor: colors.accentDangerSubtle,
+                                  },
+                                ]}
+                                activeOpacity={0.7}
+                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                accessibilityLabel={`Eliminar ${acc.name}`}
+                              >
+                                <Trash2 size={13} color={colors.accentDanger} strokeWidth={2.5} />
+                              </TouchableOpacity>
+                            </View>
                           </View>
 
                           <View
@@ -899,15 +1067,50 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                             {/* Daily Yield Module for Yield-bearing Accounts / Debit */}
                             {acc.account_type !== 'credito' ? (
                               (() => {
-                                const yieldInfo = calculateDailyYield(acc.bank_id || acc.name, acc.card_product, acc.current_balance);
-                                if (!yieldInfo.hasYield) return null;
+                                const yieldInfo = calculateDailyYield(
+                                  acc.bank_id || acc.name,
+                                  acc.card_product,
+                                  acc.current_balance,
+                                  acc.has_yield,
+                                  acc.annual_yield_rate
+                                );
+                                if (!yieldInfo.hasYield) {
+                                  return (
+                                    <TouchableOpacity
+                                      onPress={() => openEditAccount(acc, true)}
+                                      style={[
+                                        styles.addYieldBox,
+                                        { borderColor: colors.borderMuted, backgroundColor: colors.bgBase },
+                                      ]}
+                                      activeOpacity={0.7}
+                                    >
+                                      <TrendingUp size={12} color={colors.textMuted} strokeWidth={2} />
+                                      <Text style={[styles.addYieldText, { color: colors.textSecondary }]}>
+                                        + AGREGAR RENDIMIENTO ANUAL (TASA %)
+                                      </Text>
+                                    </TouchableOpacity>
+                                  );
+                                }
                                 return (
                                   <View style={[styles.yieldBox, { borderColor: '#00e676', backgroundColor: colors.bgBase }]}>
                                     <View style={styles.yieldHeader}>
-                                      <TrendingUp size={13} color="#00e676" strokeWidth={2.5} />
-                                      <Text style={[styles.yieldTitle, { color: '#00e676' }]}>
-                                        RENDIMIENTO PASIVO DIARIO [{yieldInfo.rateLabel}]
-                                      </Text>
+                                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                                        <TrendingUp size={13} color="#00e676" strokeWidth={2.5} />
+                                        <Text style={[styles.yieldTitle, { color: '#00e676' }]} numberOfLines={1}>
+                                          RENDIMIENTO PASIVO DIARIO [{yieldInfo.rateLabel}]
+                                        </Text>
+                                      </View>
+                                      <TouchableOpacity
+                                        onPress={() => openEditAccount(acc, true)}
+                                        style={[
+                                          styles.adjustRateBtn,
+                                          { borderColor: '#00e676', backgroundColor: 'rgba(0, 230, 118, 0.1)' },
+                                        ]}
+                                        activeOpacity={0.7}
+                                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                                      >
+                                        <Text style={styles.adjustRateBtnText}>AJUSTAR TASA</Text>
+                                      </TouchableOpacity>
                                     </View>
                                     <Text style={[styles.yieldAmounts, { color: colors.textPrimary }]}>
                                       +${yieldInfo.dailyYieldMxn.toFixed(2)} MXN / día
@@ -1344,6 +1547,174 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                 </View>
               )}
 
+              {/* Configuración de Rendimientos Pasivos (Débito, Ahorro, Inversión) */}
+              {accountInstrument === 'debito' && (
+                <View
+                  style={[
+                    styles.yieldConfigCard,
+                    {
+                      backgroundColor: colors.bgSurface,
+                      borderColor: hasYield ? colors.accentSuccess : colors.borderColor,
+                    },
+                  ]}
+                >
+                  <View style={styles.yieldConfigHeader}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <TrendingUp
+                        size={15}
+                        color={hasYield ? colors.accentSuccess : colors.textSecondary}
+                        strokeWidth={2.5}
+                      />
+                      <Text style={[styles.yieldConfigTitle, { color: colors.textPrimary }]}>
+                        RENDIMIENTO ANUAL
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => {
+                        const next = !hasYield;
+                        setHasYield(next);
+                        if (next && !annualYieldRate) {
+                          const b = String(selectedBankId).toLowerCase();
+                          const n = name.toLowerCase();
+                          if (b === 'nu' || n.includes('nu')) setAnnualYieldRate('13.5');
+                          else if (b === 'mercadopago' || n.includes('mercado') || n.includes('klar') || n.includes('uala')) setAnnualYieldRate('15.0');
+                          else if (n.includes('cetes')) setAnnualYieldRate('11.0');
+                          else if (n.includes('finsus')) setAnnualYieldRate('14.0');
+                          else if (n.includes('stori')) setAnnualYieldRate('15.5');
+                          else if (b === 'heybanco' || n.includes('hey')) setAnnualYieldRate('11.0');
+                          else setAnnualYieldRate('11.0');
+                        }
+                      }}
+                      style={[
+                        styles.toggleBtn,
+                        {
+                          borderColor: hasYield ? colors.accentSuccess : colors.borderColor,
+                          backgroundColor: hasYield ? colors.accentSuccessSubtle : colors.bgBase,
+                        },
+                      ]}
+                      activeOpacity={0.7}
+                    >
+                      <View
+                        style={[
+                          styles.toggleIndicator,
+                          { backgroundColor: hasYield ? colors.accentSuccess : colors.textMuted },
+                        ]}
+                      />
+                      <Text
+                        style={[
+                          styles.toggleBtnText,
+                          { color: hasYield ? colors.accentSuccess : colors.textSecondary },
+                        ]}
+                      >
+                        {hasYield ? 'ACTIVO' : 'INACTIVO'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <Text style={[styles.yieldConfigDesc, { color: colors.textSecondary }]}>
+                    Generación de ganancias pasivas diarias sobre saldo disponible o apartado (Nu, MP, CETES, Klar, Sofipos).
+                  </Text>
+
+                  {hasYield && (
+                    <View style={{ marginTop: 12 }}>
+                      <View style={styles.labelRow}>
+                        <Text style={[styles.label, { color: colors.textSecondary }]}>
+                          TASA ANUAL (%)
+                        </Text>
+                        <Text style={[styles.labelHint, { color: colors.accentSuccess }]}>
+                          // RENDIMIENTO BRUTO ANUAL
+                        </Text>
+                      </View>
+                      <TextInput
+                        style={[
+                          styles.input,
+                          {
+                            backgroundColor: colors.bgBase,
+                            borderColor: colors.borderColor,
+                            color: colors.textPrimary,
+                          },
+                        ]}
+                        placeholder="Ej. 13.50 ó 15.00"
+                        placeholderTextColor={colors.textMuted}
+                        keyboardType="numeric"
+                        value={annualYieldRate}
+                        onChangeText={setAnnualYieldRate}
+                      />
+
+                      {/* Quick Chips con tasas de rendimiento populares */}
+                      <View style={styles.quickChipsStaticRow}>
+                        {POPULAR_YIELD_PRESETS.map((preset) => {
+                          const isSelected = annualYieldRate === String(preset.rate);
+                          return (
+                            <TouchableOpacity
+                              key={preset.label}
+                              onPress={() => setAnnualYieldRate(String(preset.rate))}
+                              style={[
+                                styles.quickChip,
+                                {
+                                  borderColor: isSelected ? colors.accentSuccess : colors.borderColor,
+                                  backgroundColor: isSelected ? colors.accentSuccessSubtle : colors.bgBase,
+                                },
+                              ]}
+                              activeOpacity={0.7}
+                            >
+                              <Text
+                                style={[
+                                  styles.quickChipText,
+                                  { color: isSelected ? colors.accentSuccess : colors.textSecondary },
+                                ]}
+                              >
+                                {preset.label}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+
+                      {/* Live Proyección con saldo */}
+                      {(() => {
+                        const bal = parseFloat(balance.replace(/,/g, '')) || 0;
+                        const rate = parseFloat(annualYieldRate) || 0;
+                        if (rate > 0) {
+                          const decRate = rate > 1 ? rate / 100 : rate;
+                          const daily = bal > 0 ? bal * (decRate / 360) : 0;
+                          const monthly = bal > 0 ? (bal * decRate) / 12 : 0;
+                          return (
+                            <View
+                              style={[
+                                styles.yieldLiveBox,
+                                {
+                                  borderColor: colors.accentSuccess,
+                                  backgroundColor: colors.bgBase,
+                                },
+                              ]}
+                            >
+                              <View style={styles.yieldLiveHeader}>
+                                <Zap size={13} color={colors.accentSuccess} strokeWidth={2.5} />
+                                <Text style={[styles.yieldLiveTitle, { color: colors.accentSuccess }]}>
+                                  PROYECCIÓN ESTIMADA ({rate}% ANUAL):
+                                </Text>
+                              </View>
+                              <Text style={[styles.yieldLiveValue, { color: colors.textPrimary }]}>
+                                +${daily.toFixed(2)} MXN / día
+                                <Text style={{ color: colors.textSecondary, fontSize: 11 }}>
+                                  {' '}
+                                  (~${monthly.toFixed(2)} MXN / mes)
+                                </Text>
+                              </Text>
+                              <Text style={[styles.yieldLiveHint, { color: colors.textMuted }]}>
+                                // Estimado sobre saldo inicial de ${formatMoney(bal)} MXN (360 días bancarios).
+                              </Text>
+                            </View>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </View>
+                  )}
+                </View>
+              )}
+
               {/* Parámetros Específicos para Tarjeta de Crédito */}
               {accountInstrument === 'credito' && (
                 <View
@@ -1695,6 +2066,311 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* Modal Editar Cuenta / Rendimiento */}
+      <Modal
+        visible={editModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setEditModalOpen(false);
+          setEditingAccount(null);
+        }}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalOverlay}
+        >
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => {
+              setEditModalOpen(false);
+              setEditingAccount(null);
+            }}
+          />
+          <View
+            style={[
+              styles.modalContent,
+              {
+                backgroundColor: colors.bgBase,
+                borderColor: colors.borderColor,
+                shadowColor: colors.shadowColor,
+                width: isMobile ? '94%' : 480,
+                maxWidth: 480,
+                ...(Platform.OS === 'web' ? { boxShadow: `8px 8px 0px 0px ${colors.shadowColor}` } : {}),
+              },
+            ]}
+          >
+            <View style={[styles.modalHeaderRow, { borderBottomColor: colors.borderColor }]}>
+              <View>
+                <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>CONFIGURAR CUENTA</Text>
+                <Text style={[styles.modalSub, { color: colors.accentSuccess }]}>// RENDIMIENTOS Y PARÁMETROS</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => {
+                  setEditModalOpen(false);
+                  setEditingAccount(null);
+                }}
+                style={[styles.modalCloseBtn, { borderColor: colors.borderColor, backgroundColor: colors.bgSurface }]}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityLabel="Cerrar modal"
+              >
+                <X size={16} color={colors.textPrimary} strokeWidth={2.5} />
+              </TouchableOpacity>
+            </View>
+
+            {editingAccount && (
+              <ScrollView
+                style={styles.modalForm}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
+                {/* Account Preview Badge */}
+                <View
+                  style={[
+                    styles.previewBox,
+                    {
+                      backgroundColor: colors.bgSurface,
+                      borderColor: colors.borderColor,
+                    },
+                  ]}
+                >
+                  <BankAvatar
+                    bankId={(editingAccount.bank_id as MexicanBankId) || detectBankFromName(editingAccount.name)}
+                    size={42}
+                  />
+                  <View style={styles.previewInfo}>
+                    <Text style={[styles.previewName, { color: colors.textPrimary }]} numberOfLines={1}>
+                      {editName.trim() || editingAccount.name}
+                    </Text>
+                    <View style={styles.previewMetaRow}>
+                      <Text style={[styles.previewBank, { color: colors.accent }]}>
+                        {getBankDefinition((editingAccount.bank_id as MexicanBankId) || detectBankFromName(editingAccount.name)).name}
+                      </Text>
+                      <Text style={[styles.previewType, { color: colors.textSecondary }]}>
+                        // {editingAccount.account_type.toUpperCase()} • SALDO: ${formatMoney(editingAccount.current_balance)}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Edit Name */}
+                <View style={styles.formGroup}>
+                  <View style={styles.labelRow}>
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>NOMBRE DE LA CUENTA</Text>
+                    <Text style={[styles.labelHint, { color: colors.accent }]}>// IDENTIFICADOR</Text>
+                  </View>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { backgroundColor: colors.bgSurface, borderColor: colors.borderColor, color: colors.textPrimary },
+                    ]}
+                    value={editName}
+                    onChangeText={setEditName}
+                    placeholder="Nombre de la cuenta"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                </View>
+
+                {/* Rendimientos Pasivos para Cuentas No Crédito */}
+                {editingAccount.account_type !== 'credito' && (
+                  <View
+                    style={[
+                      styles.yieldConfigCard,
+                      {
+                        backgroundColor: colors.bgSurface,
+                        borderColor: editHasYield ? colors.accentSuccess : colors.borderColor,
+                      },
+                    ]}
+                  >
+                    <View style={styles.yieldConfigHeader}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <TrendingUp
+                          size={15}
+                          color={editHasYield ? colors.accentSuccess : colors.textSecondary}
+                          strokeWidth={2.5}
+                        />
+                        <Text style={[styles.yieldConfigTitle, { color: colors.textPrimary }]}>
+                          RENDIMIENTO ANUAL
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => {
+                          const next = !editHasYield;
+                          setEditHasYield(next);
+                          if (next && !editAnnualYieldRate) {
+                            const bId = String(editingAccount.bank_id || detectBankFromName(editingAccount.name)).toLowerCase();
+                            const n = (editName || editingAccount.name).toLowerCase();
+                            if (bId === 'nu' || n.includes('nu')) setEditAnnualYieldRate('13.5');
+                            else if (bId === 'mercadopago' || n.includes('mercado') || n.includes('klar') || n.includes('uala')) setEditAnnualYieldRate('15.0');
+                            else if (n.includes('cetes')) setEditAnnualYieldRate('11.0');
+                            else if (n.includes('finsus')) setEditAnnualYieldRate('14.0');
+                            else if (n.includes('stori')) setEditAnnualYieldRate('15.5');
+                            else if (bId === 'heybanco' || n.includes('hey')) setEditAnnualYieldRate('11.0');
+                            else setEditAnnualYieldRate('11.0');
+                          }
+                        }}
+                        style={[
+                          styles.toggleBtn,
+                          {
+                            borderColor: editHasYield ? colors.accentSuccess : colors.borderColor,
+                            backgroundColor: editHasYield ? colors.accentSuccessSubtle : colors.bgBase,
+                          },
+                        ]}
+                        activeOpacity={0.7}
+                      >
+                        <View
+                          style={[
+                            styles.toggleIndicator,
+                            { backgroundColor: editHasYield ? colors.accentSuccess : colors.textMuted },
+                          ]}
+                        />
+                        <Text
+                          style={[
+                            styles.toggleBtnText,
+                            { color: editHasYield ? colors.accentSuccess : colors.textSecondary },
+                          ]}
+                        >
+                          {editHasYield ? 'ACTIVO' : 'INACTIVO'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    <Text style={[styles.yieldConfigDesc, { color: colors.textSecondary }]}>
+                      Genera ganancias pasivas sobre el saldo disponible (Nu Cajitas, Mercado Pago, CETES, Klar, Sofipos, etc.).
+                    </Text>
+
+                    {editHasYield && (
+                      <View style={{ marginTop: 12 }}>
+                        <View style={styles.labelRow}>
+                          <Text style={[styles.label, { color: colors.textSecondary }]}>
+                            TASA ANUAL (%)
+                          </Text>
+                          <Text style={[styles.labelHint, { color: colors.accentSuccess }]}>
+                            // INGRESA LA TASA ANUAL (EJ. 13.50 Ó 15.00)
+                          </Text>
+                        </View>
+                        <TextInput
+                          style={[
+                            styles.input,
+                            {
+                              backgroundColor: colors.bgBase,
+                              borderColor: colors.borderColor,
+                              color: colors.textPrimary,
+                            },
+                          ]}
+                          placeholder="Ej. 13.50 ó 15.00"
+                          placeholderTextColor={colors.textMuted}
+                          keyboardType="numeric"
+                          value={editAnnualYieldRate}
+                          onChangeText={setEditAnnualYieldRate}
+                        />
+
+                        {/* Quick Chips */}
+                        <View style={styles.quickChipsStaticRow}>
+                          {POPULAR_YIELD_PRESETS.map((preset) => {
+                            const isSelected = editAnnualYieldRate === String(preset.rate);
+                            return (
+                              <TouchableOpacity
+                                key={preset.label}
+                                onPress={() => setEditAnnualYieldRate(String(preset.rate))}
+                                style={[
+                                  styles.quickChip,
+                                  {
+                                    borderColor: isSelected ? colors.accentSuccess : colors.borderColor,
+                                    backgroundColor: isSelected ? colors.accentSuccessSubtle : colors.bgBase,
+                                  },
+                                ]}
+                                activeOpacity={0.7}
+                              >
+                                <Text
+                                  style={[
+                                    styles.quickChipText,
+                                    { color: isSelected ? colors.accentSuccess : colors.textSecondary },
+                                  ]}
+                                >
+                                  {preset.label}
+                                </Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+
+                        {/* Live calculation on current account balance */}
+                        {(() => {
+                          const bal = parseFloat(editingAccount.current_balance) || 0;
+                          const rate = parseFloat(editAnnualYieldRate) || 0;
+                          if (rate > 0) {
+                            const decRate = rate > 1 ? rate / 100 : rate;
+                            const daily = bal > 0 ? bal * (decRate / 360) : 0;
+                            const monthly = bal > 0 ? (bal * decRate) / 12 : 0;
+                            return (
+                              <View
+                                style={[
+                                  styles.yieldLiveBox,
+                                  {
+                                    borderColor: colors.accentSuccess,
+                                    backgroundColor: colors.bgBase,
+                                  },
+                                ]}
+                              >
+                                <View style={styles.yieldLiveHeader}>
+                                  <Zap size={13} color={colors.accentSuccess} strokeWidth={2.5} />
+                                  <Text style={[styles.yieldLiveTitle, { color: colors.accentSuccess }]}>
+                                    PROYECCIÓN EN VIVO ({rate}% ANUAL):
+                                  </Text>
+                                </View>
+                                <Text style={[styles.yieldLiveValue, { color: colors.textPrimary }]}>
+                                  +${daily.toFixed(2)} MXN / día
+                                  <Text style={{ color: colors.textSecondary, fontSize: 11 }}>
+                                    {' '}
+                                    (~${monthly.toFixed(2)} MXN / mes)
+                                  </Text>
+                                </Text>
+                                <Text style={[styles.yieldLiveHint, { color: colors.textMuted }]}>
+                                  // Calculado con el saldo actual de ${formatMoney(bal)} MXN (360 días bancarios).
+                                </Text>
+                              </View>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </View>
+                    )}
+                  </View>
+                )}
+
+                <TouchableOpacity
+                  onPress={handleSaveEdit}
+                  disabled={isSavingEdit}
+                  style={[
+                    styles.submitBtn,
+                    {
+                      backgroundColor: colors.accent,
+                      borderColor: colors.borderColor,
+                      shadowColor: colors.shadowColor,
+                      marginTop: 20,
+                      ...(Platform.OS === 'web' ? { boxShadow: `3px 3px 0px 0px ${colors.shadowColor}` } : {}),
+                    },
+                  ]}
+                  activeOpacity={0.8}
+                >
+                  {isSavingEdit ? (
+                    <ActivityIndicator size="small" color="#000000" />
+                  ) : (
+                    <>
+                      <Check size={16} color="#000000" strokeWidth={3} />
+                      <Text style={styles.submitBtnText}>GUARDAR CAMBIOS</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </ScrollView>
+            )}
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 };
@@ -1975,6 +2651,18 @@ const styles = StyleSheet.create({
     fontSize: 8.5,
     fontWeight: '900',
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+  },
+  cardActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  editBtn: {
+    width: 32,
+    height: 32,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   deleteBtn: {
     width: 32,
@@ -2486,6 +3174,156 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
     marginTop: 2,
+  },
+  adjustRateBtn: {
+    borderWidth: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  adjustRateBtnText: {
+    fontSize: 8.5,
+    fontWeight: '900',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    color: '#00e676',
+    letterSpacing: 0.4,
+  },
+  addYieldBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    marginTop: 8,
+  },
+  addYieldText: {
+    fontSize: 9.5,
+    fontWeight: '900',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    letterSpacing: 0.6,
+  },
+  yieldSummaryBanner: {
+    borderWidth: 2,
+    padding: 14,
+    marginBottom: 16,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    gap: 12,
+  },
+  yieldBannerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  yieldBannerIconWrap: {
+    width: 32,
+    height: 32,
+    backgroundColor: 'rgba(0, 230, 118, 0.12)',
+    borderWidth: 1.5,
+    borderColor: '#00e676',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  yieldBannerTitle: {
+    fontSize: 11,
+    fontWeight: '900',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    letterSpacing: 0.8,
+    color: '#00e676',
+  },
+  yieldBannerSub: {
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  yieldBannerNumbers: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 230, 118, 0.25)',
+  },
+  yieldBannerVal: {
+    fontSize: 16,
+    fontWeight: '900',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+  },
+  yieldBannerSubLabel: {
+    fontSize: 8.5,
+    fontWeight: '800',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    letterSpacing: 0.5,
+    marginTop: 2,
+  },
+  yieldConfigCard: {
+    borderWidth: 1.5,
+    padding: 12,
+    marginTop: 10,
+  },
+  yieldConfigHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  yieldConfigTitle: {
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+  },
+  yieldConfigDesc: {
+    fontSize: 10.5,
+    lineHeight: 14,
+    marginTop: 4,
+  },
+  toggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1.5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  toggleIndicator: {
+    width: 8,
+    height: 8,
+  },
+  toggleBtnText: {
+    fontSize: 9.5,
+    fontWeight: '900',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    letterSpacing: 0.6,
+  },
+  yieldLiveBox: {
+    borderWidth: 1.5,
+    padding: 10,
+    marginTop: 10,
+    gap: 4,
+  },
+  yieldLiveHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  yieldLiveTitle: {
+    fontSize: 9.5,
+    fontWeight: '900',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    letterSpacing: 0.8,
+  },
+  yieldLiveValue: {
+    fontSize: 13,
+    fontWeight: '900',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+  },
+  yieldLiveHint: {
+    fontSize: 9,
+    fontWeight: '700',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
 });
 

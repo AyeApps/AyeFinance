@@ -39,6 +39,8 @@ def _serialize_account(acc) -> AccountResponse:
         cut_off_day=getattr(acc, "cut_off_day", None),
         payment_due_day=getattr(acc, "payment_due_day", None),
         payment_grace_days=getattr(acc, "payment_grace_days", None),
+        has_yield=getattr(acc, "has_yield", False) or False,
+        annual_yield_rate=getattr(acc, "annual_yield_rate", None),
         created_at=acc.created_at,
         updated_at=acc.updated_at,
     )

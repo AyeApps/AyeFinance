@@ -31,6 +31,8 @@ class Account(SoftDeleteDocument):
     cut_off_day: int | None = Field(default=None, ge=1, le=31)
     payment_due_day: int | None = Field(default=None, ge=1, le=31)
     payment_grace_days: int | None = Field(default=None, ge=1, le=60)
+    has_yield: bool = False
+    annual_yield_rate: AyeDecimal | None = None
 
 
     class Settings:

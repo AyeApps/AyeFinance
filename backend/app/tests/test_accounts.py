@@ -195,3 +195,50 @@ async def test_default_cash_account_and_deletion(client: AsyncClient, auth_heade
     assert resp2.status_code == 200
     accs2 = resp2.json()
     assert not any(a["name"] == "Efectivo" for a in accs2)
+
+
+@pytest.mark.asyncio
+async def test_create_and_update_yield_bearing_account(client: AsyncClient, auth_headers):
+    payload = {
+        "name": "Cajita Nu",
+        "account_type": "ahorro",
+        "currency": "MXN",
+        "initial_balance": "50000.00",
+        "color": "#820AD1",
+        "icon": "piggy_bank",
+        "bank_id": "nu",
+        "is_liquid": True,
+        "has_yield": True,
+        "annual_yield_rate": "13.50",
+    }
+    create_resp = await client.post("/api/v1/accounts/", json=payload, headers=auth_headers)
+    assert create_resp.status_code == 201
+    data = create_resp.json()
+    assert data["has_yield"] is True
+    assert data["annual_yield_rate"] == "13.50"
+    assert data["name"] == "Cajita Nu"
+
+    acc_id = data["id"]
+
+    # Update yield rate to 14.50
+    patch_resp = await client.patch(
+        f"/api/v1/accounts/{acc_id}",
+        json={"annual_yield_rate": "14.50"},
+        headers=auth_headers,
+    )
+    assert patch_resp.status_code == 200
+    updated_data = patch_resp.json()
+    assert updated_data["annual_yield_rate"] == "14.50"
+    assert updated_data["has_yield"] is True
+
+    # Disable yield
+    patch_resp2 = await client.patch(
+        f"/api/v1/accounts/{acc_id}",
+        json={"has_yield": False, "annual_yield_rate": None},
+        headers=auth_headers,
+    )
+    assert patch_resp2.status_code == 200
+    updated_data2 = patch_resp2.json()
+    assert updated_data2["has_yield"] is False
+    assert updated_data2["annual_yield_rate"] is None
+

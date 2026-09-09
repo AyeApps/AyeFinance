@@ -291,34 +291,97 @@ export const evaluateAnnuityExemption = (
   };
 };
 
+export interface YieldPreset {
+  label: string;
+  rate: number;
+  description: string;
+}
+
+export const POPULAR_YIELD_PRESETS: YieldPreset[] = [
+  { label: 'CETES (11%)', rate: 11.0, description: '11.0% CETES' },
+  { label: 'NU (13.5%)', rate: 13.5, description: '13.5% Nu Cajitas' },
+  { label: 'FINSUS (14%)', rate: 14.0, description: '14.0% Finsus' },
+  { label: 'MP / KLAR (15%)', rate: 15.0, description: '15.0% Mercado Pago / Klar' },
+  { label: 'STORI (15.5%)', rate: 15.5, description: '15.5% Stori Cuenta+' },
+];
+
 /**
- * 3. RENDIMIENTOS DIARIOS PASIVOS EN CUENTAS DE DÉBITO / FINTECH
+ * 3. RENDIMIENTOS DIARIOS PASIVOS EN CUENTAS DE DÉBITO / FINTECH / INVERSIÓN
  */
 export const calculateDailyYield = (
   bankId?: string | null,
   productName?: string | null,
-  currentBalanceStr?: string | number | null
+  currentBalanceStr?: string | number | null,
+  customHasYield?: boolean | null,
+  customAnnualYieldRate?: number | string | null
 ): DailyYieldCalculation => {
   const balance = typeof currentBalanceStr === 'number' ? currentBalanceStr : parseFloat(String(currentBalanceStr || '0').replace(/[^0-9.-]/g, '')) || 0;
   const normBank = (bankId || '').toLowerCase().trim();
   const normProd = (productName || '').toLowerCase().trim();
 
+  // If explicitly disabled
+  if (customHasYield === false) {
+    return {
+      hasYield: false,
+      annualRate: 0,
+      dailyRate: 0,
+      dailyYieldMxn: 0,
+      monthlyYieldMxn: 0,
+      rateLabel: '',
+    };
+  }
+
   let annualRate = 0;
   let rateLabel = '';
 
-  if (normBank === 'nu' || normProd.includes('cajita') || normProd.includes('nu')) {
-    annualRate = 0.135; // 13.5% anual representativo
-    rateLabel = '13.5% Anual (Cajitas Nu)';
-  } else if (normBank === 'mercadopago' || normProd.includes('mercado pago')) {
-    annualRate = 0.100; // 10.0% anual representativo GBM
-    rateLabel = '10.0% Anual (Mercado Pago)';
-  } else if (normBank === 'heybanco' && (normProd.includes('inversion') || normProd.includes('smart'))) {
-    annualRate = 0.110;
-    rateLabel = '11.0% Anual (Hey Inversión)';
+  // Check if custom annual rate is provided
+  if (customAnnualYieldRate !== undefined && customAnnualYieldRate !== null && customAnnualYieldRate !== '') {
+    const rawRate = typeof customAnnualYieldRate === 'number'
+      ? customAnnualYieldRate
+      : parseFloat(String(customAnnualYieldRate).replace(/[^0-9.-]/g, ''));
+
+    if (!isNaN(rawRate) && rawRate > 0) {
+      annualRate = rawRate > 1 ? rawRate / 100 : rawRate;
+      const pctFormatted = (annualRate * 100).toFixed(2).replace(/\.00$/, '');
+      rateLabel = `${pctFormatted}% Anual`;
+    }
+  }
+
+  // If no custom rate set or valid, check bank presets
+  if (annualRate === 0) {
+    if (normBank === 'nu' || normProd.includes('cajita') || normProd.includes('nu')) {
+      annualRate = 0.135; // 13.5% anual representativo
+      rateLabel = '13.5% Anual (Cajitas Nu)';
+    } else if (normBank === 'mercadopago' || normProd.includes('mercado pago')) {
+      annualRate = 0.150; // 15.0% anual representativo Mercado Pago
+      rateLabel = '15.0% Anual (Mercado Pago)';
+    } else if (normBank === 'heybanco' && (normProd.includes('inversion') || normProd.includes('smart'))) {
+      annualRate = 0.110;
+      rateLabel = '11.0% Anual (Hey Inversión)';
+    } else if (normBank === 'klar' || normProd.includes('klar')) {
+      annualRate = 0.150;
+      rateLabel = '15.0% Anual (Klar)';
+    } else if (normBank === 'uala' || normProd.includes('ualá') || normProd.includes('uala')) {
+      annualRate = 0.150;
+      rateLabel = '15.0% Anual (Ualá)';
+    } else if (normBank === 'cetes' || normProd.includes('cetes')) {
+      annualRate = 0.110;
+      rateLabel = '11.0% Anual (CETES)';
+    } else if (normBank === 'finsus' || normProd.includes('finsus')) {
+      annualRate = 0.140;
+      rateLabel = '14.0% Anual (Finsus)';
+    } else if (normBank === 'stori' || normProd.includes('stori')) {
+      annualRate = 0.155;
+      rateLabel = '15.5% Anual (Stori)';
+    } else if (customHasYield === true) {
+      // Default rate if user toggled yield on without specifying rate
+      annualRate = 0.100;
+      rateLabel = '10.0% Anual';
+    }
   }
 
   if (annualRate > 0 && balance > 0) {
-    const dailyRate = annualRate / 360;
+    const dailyRate = annualRate / 360; // Convención bancaria 360 días
     const dailyYieldMxn = Number((balance * dailyRate).toFixed(2));
     const monthlyYieldMxn = Number(((balance * annualRate) / 12).toFixed(2));
     return {

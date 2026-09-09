@@ -21,6 +21,8 @@ class AccountCreate(BaseModel):
     cut_off_day: int | None = Field(default=None, ge=1, le=31)
     payment_due_day: int | None = Field(default=None, ge=1, le=31)
     payment_grace_days: int | None = Field(default=None, ge=1, le=60)
+    has_yield: bool = False
+    annual_yield_rate: Decimal | None = Field(default=None, ge=Decimal("0.00"), le=Decimal("100.00"))
 
 
 class AccountUpdate(BaseModel):
@@ -36,6 +38,8 @@ class AccountUpdate(BaseModel):
     cut_off_day: int | None = Field(default=None, ge=1, le=31)
     payment_due_day: int | None = Field(default=None, ge=1, le=31)
     payment_grace_days: int | None = Field(default=None, ge=1, le=60)
+    has_yield: bool | None = None
+    annual_yield_rate: Decimal | None = Field(default=None, ge=Decimal("0.00"), le=Decimal("100.00"))
 
 
 class AccountResponse(BaseModel):
@@ -55,6 +59,8 @@ class AccountResponse(BaseModel):
     cut_off_day: int | None = None
     payment_due_day: int | None = None
     payment_grace_days: int | None = None
+    has_yield: bool = False
+    annual_yield_rate: Decimal | None = None
     created_at: datetime
     updated_at: datetime
 

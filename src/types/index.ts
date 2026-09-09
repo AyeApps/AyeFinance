@@ -34,6 +34,8 @@ export interface Account {
   cut_off_day?: number | null;
   payment_due_day?: number | null;
   payment_grace_days?: number | null;
+  has_yield?: boolean;
+  annual_yield_rate?: string | number | null;
   created_at: string;
   updated_at: string;
 }

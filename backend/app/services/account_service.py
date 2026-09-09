@@ -54,6 +54,8 @@ async def create_account(user_id: str, data: AccountCreate) -> Account:
         cut_off_day=data.cut_off_day,
         payment_due_day=data.payment_due_day,
         payment_grace_days=data.payment_grace_days,
+        has_yield=data.has_yield,
+        annual_yield_rate=data.annual_yield_rate,
     )
 
     await account.insert()
