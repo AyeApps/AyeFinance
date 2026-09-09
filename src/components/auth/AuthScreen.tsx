@@ -26,6 +26,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useTranslation } from '../../store/useLanguageStore';
 import { AyeFinanceLogo } from '../ui/AyeFinanceLogo';
+import { TurnstileVerification } from './TurnstileVerification';
 import { api, getAuthApiBaseUrl } from '../../services/api';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -85,68 +86,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onBack }) => {
   const [isAppleAuthAvailable, setIsAppleAuthAvailable] = useState(Platform.OS === 'ios');
   const [serverStatus, setServerStatus] = useState<'online' | 'offline' | 'checking'>('checking');
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const turnstileWidgetId = React.useRef<string | null>(null);
-
-  // Cloudflare Turnstile setup on Web
-  useEffect(() => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
-
-    const siteKey = process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY || '0x4AAAAAAEn3YN77Mt7jKxas';
-
-    const renderWidget = () => {
-      const win = window as any;
-      if (!win.turnstile) return;
-      const container = document.getElementById('ayefinance-turnstile-widget');
-      if (!container) return;
-
-      if (turnstileWidgetId.current !== null) {
-        try {
-          win.turnstile.reset(turnstileWidgetId.current);
-        } catch {}
-        return;
-      }
-
-      try {
-        turnstileWidgetId.current = win.turnstile.render('#ayefinance-turnstile-widget', {
-          sitekey: siteKey,
-          theme: isDark ? 'dark' : 'light',
-          callback: (token: string) => {
-            setTurnstileToken(token);
-          },
-          'expired-callback': () => {
-            setTurnstileToken(null);
-          },
-          'error-callback': () => {
-            setTurnstileToken(null);
-          },
-        });
-      } catch (e) {
-        console.warn('[Turnstile] render error:', e);
-      }
-    };
-
-    let timer: any;
-    if ((window as any).turnstile) {
-      renderWidget();
-    } else {
-      timer = setInterval(() => {
-        if ((window as any).turnstile) {
-          renderWidget();
-          clearInterval(timer);
-        }
-      }, 300);
-    }
-
-    return () => {
-      if (timer) clearInterval(timer);
-      if (turnstileWidgetId.current !== null && (window as any).turnstile) {
-        try {
-          (window as any).turnstile.remove(turnstileWidgetId.current);
-        } catch {}
-        turnstileWidgetId.current = null;
-      }
-    };
-  }, [authMode, isDark]);
+  const [turnstileResetKey, setTurnstileResetKey] = useState<number>(0);
 
   const checkStatus = React.useCallback(async () => {
     setServerStatus('checking');
@@ -314,7 +254,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onBack }) => {
       return;
     }
 
-    if (Platform.OS === 'web' && !turnstileToken) {
+    if (!turnstileToken) {
       setIsAccountNotFound(false);
       setAuthError(
         language === 'es'
@@ -336,12 +276,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onBack }) => {
       }
       await AsyncStorage.setItem(REMEMBERED_EMAIL_KEY, trimmedEmail);
     } catch (err: any) {
-      if (Platform.OS === 'web' && typeof window !== 'undefined' && (window as any).turnstile && turnstileWidgetId.current !== null) {
-        try {
-          (window as any).turnstile.reset(turnstileWidgetId.current);
-        } catch {}
-        setTurnstileToken(null);
-      }
+      setTurnstileResetKey((k) => k + 1);
+      setTurnstileToken(null);
 
       const msg = err.message || '';
       if (
@@ -724,12 +660,21 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onBack }) => {
                 </View>
               ) : null}
 
-              {/* Cloudflare Turnstile Verification Widget on Web */}
-              {Platform.OS === 'web' && (
-                <View style={styles.turnstileContainer}>
-                  <div id="ayefinance-turnstile-widget" />
-                </View>
-              )}
+              {/* Cloudflare Turnstile Verification Widget (Web & Mobile Native) */}
+              <TurnstileVerification
+                isDark={isDark}
+                resetKey={turnstileResetKey}
+                onSuccess={(token) => {
+                  setTurnstileToken(token);
+                  setAuthError('');
+                }}
+                onError={() => {
+                  setTurnstileToken(null);
+                }}
+                onExpire={() => {
+                  setTurnstileToken(null);
+                }}
+              />
 
               {/* Submit Button */}
               <TouchableOpacity
