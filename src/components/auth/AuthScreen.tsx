@@ -524,11 +524,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onBack }) => {
 
           <View style={[styles.techFrameContent, isMobile && styles.techFrameContentMobile]}>
             {/* Title Section */}
-            <View style={styles.titleSection}>
-              <View style={styles.authLogoBox}>
-                <AyeFinanceLogo size={56} />
+            <View style={[styles.titleSection, isMobile && styles.titleSectionMobile]}>
+              <View style={[styles.authLogoBox, isMobile && styles.authLogoBoxMobile]}>
+                <AyeFinanceLogo size={isMobile ? 40 : 56} />
               </View>
-              <Text style={[styles.heroTitle, { color: colors.textPrimary }]}>
+              <Text style={[styles.heroTitle, isMobile && styles.heroTitleMobile, { color: colors.textPrimary }]}>
                 AYEFINANCE
               </Text>
             </View>
@@ -954,15 +954,28 @@ const styles = StyleSheet.create({
   titleSection: {
     marginBottom: 24,
   },
+  titleSectionMobile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 12,
+  },
   authLogoBox: {
     marginBottom: 16,
     alignItems: 'flex-start',
+  },
+  authLogoBoxMobile: {
+    marginBottom: 0,
   },
   heroTitle: {
     fontSize: 36,
     fontWeight: '900',
     letterSpacing: 1.5,
     textTransform: 'uppercase',
+  },
+  heroTitleMobile: {
+    fontSize: 22,
+    letterSpacing: 1.2,
   },
   segmentedSelector: {
     flexDirection: 'row',

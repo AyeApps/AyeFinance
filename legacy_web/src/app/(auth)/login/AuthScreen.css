@@ -146,6 +146,20 @@
     max-width: 100%;
     padding-top: 44px;
   }
+  .ayetasks-title-section {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .ayetasks-auth-logo-box {
+    margin-bottom: 0;
+  }
+  .ayetasks-hero-title {
+    font-size: 24px;
+    letter-spacing: 1.2px;
+  }
 }
 
 /* Pinned Tech Badge (Top Left of Card overlapping border) */

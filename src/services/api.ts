@@ -18,9 +18,8 @@ export const getApiBaseUrl = (): string => {
     typeof window !== 'undefined' &&
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
-  if (__DEV__ || isWebLocal) {
-    const host = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
-    return `http://${host}:8003/api/v1`;
+  if (isWebLocal) {
+    return 'http://localhost:8003/api/v1';
   }
 
   return 'https://api-ayfice.ayeapps.com/api/v1';
@@ -41,9 +40,8 @@ export const getAuthApiBaseUrl = (): string => {
     typeof window !== 'undefined' &&
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
-  if (__DEV__ || isWebLocal) {
-    const host = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
-    return `http://${host}:8000/api/v1`;
+  if (isWebLocal) {
+    return 'http://localhost:8000/api/v1';
   }
 
   return 'https://api-auth.ayeapps.com/api/v1';
@@ -52,8 +50,20 @@ export const getAuthApiBaseUrl = (): string => {
 
 export const api = {
   async checkHealth(): Promise<boolean> {
+    const baseUrl = getApiBaseUrl();
+    const healthUrl = baseUrl.endsWith('/api/v1')
+      ? `${baseUrl.replace('/api/v1', '')}/health`
+      : `${baseUrl}/health`;
+
     try {
-      const res = await fetch(`${getApiBaseUrl().replace('/api/v1', '')}/health`, { method: 'GET' });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+      const res = await fetch(healthUrl, {
+        method: 'GET',
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
       return res.ok;
     } catch {
       return false;

@@ -34,7 +34,14 @@ class Settings(BaseSettings):
     CORS_ORIGINS: list[str] | str = [
         "http://localhost:3000",
         "http://localhost:3002",
+        "http://localhost:5173",
+        "http://localhost:8080",
+        "http://localhost:8081",
+        "http://localhost:8083",
         "https://finance.ayeapps.com",
+        "https://tasks.ayeapps.com",
+        "https://ayeapps.com",
+        "ayefinance://app",
     ]
 
     @field_validator("JWT_SECRET_KEY")
