@@ -119,8 +119,9 @@ start_metro() {
 
 clean_prebuild() {
   header "Limpiando y regenerando proyectos nativos desde cero"
-  log "Eliminando carpetas nativas existentes..."
+  log "Eliminando carpetas nativas y caché C++/CMake..."
   rm -rf android/ ios/
+  find node_modules -name ".cxx" -type d -prune -exec rm -rf {} + 2>/dev/null || true
   log "Ejecutando npx expo prebuild --clean..."
   npx expo prebuild --clean
   success "Proyectos nativos regenerados limpiamente"

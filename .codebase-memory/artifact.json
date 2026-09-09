@@ -1,11 +1,11 @@
 {
     "schema_version": 1,
-    "commit": "a4863975b2421bdd2805744f48f3afcd3001333f",
-    "indexed_at": "2026-09-09T18:43:31Z",
+    "commit": "ecc3b59786a8bfd651135701d7c6f62275731e92",
+    "indexed_at": "2026-09-09T19:41:06Z",
     "project": "Users-alberto24dev-tech-code-aye-ayefinance",
     "nodes": 1177,
     "edges": 2998,
     "original_size": 5570560,
-    "compressed_size": 928756,
+    "compressed_size": 928744,
     "compression_level": 3
 }
