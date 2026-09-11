@@ -49,9 +49,26 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
 
 
 # Middlewares (Executed in reverse order of addition)
+cors_origins = settings.CORS_ORIGINS if isinstance(settings.CORS_ORIGINS, list) else ["*"]
+if "*" in cors_origins:
+    cors_origins = [
+        "http://localhost:3000",
+        "http://localhost:3002",
+        "http://localhost:8080",
+        "http://localhost:8081",
+        "http://localhost:8083",
+        "http://127.0.0.1:8080",
+        "http://127.0.0.1:8081",
+        "http://127.0.0.1:8083",
+        "https://finance.ayeapps.com",
+        "https://tasks.ayeapps.com",
+        "https://ayeapps.com",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS if isinstance(settings.CORS_ORIGINS, list) else ["*"],
+    allow_origins=cors_origins,
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

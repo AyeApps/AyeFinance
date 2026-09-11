@@ -1,0 +1,410 @@
+import { Platform } from 'react-native';
+import { authStorage } from './authStorage';
+import { widgetBridge } from './widgetBridge';
+import { Account, AccountSummary, PaginatedResponse, RecurringItem, SyncDeltaResponse, Transaction, User } from '../types';
+
+export const getApiBaseUrl = (): string => {
+  // 1. Auto-detect local web development (localhost, 127.0.0.1, or LAN IP)
+  const isWebLocal =
+    Platform.OS === 'web' &&
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname.startsWith('192.168.') ||
+      window.location.hostname.startsWith('10.') ||
+      window.location.hostname.endsWith('.local'));
+
+  if (isWebLocal) {
+    const host = window.location.hostname;
+    return `http://${host}:8003/api/v1`;
+  }
+
+  // 2. Explicit ENV URL for mobile / native builds
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    let url = process.env.EXPO_PUBLIC_API_URL;
+    if (Platform.OS === 'android' && url.includes('localhost')) {
+      url = url.replace('localhost', '10.0.2.2').replace('127.0.0.1', '10.0.2.2');
+    }
+    return url;
+  }
+
+  // 3. Auto-detect Native Dev (Expo Metro)
+  if (__DEV__) {
+    const host = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+    return `http://${host}:8003/api/v1`;
+  }
+
+  return 'https://api-ayfice.ayeapps.com/api/v1';
+};
+
+export const getAuthApiBaseUrl = (): string => {
+  // 1. Auto-detect local web development (localhost, 127.0.0.1, or LAN IP)
+  const isWebLocal =
+    Platform.OS === 'web' &&
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname.startsWith('192.168.') ||
+      window.location.hostname.startsWith('10.') ||
+      window.location.hostname.endsWith('.local'));
+
+  if (isWebLocal) {
+    const host = window.location.hostname;
+    return `http://${host}:8000/api/v1`;
+  }
+
+  // 2. Explicit ENV URL for mobile / native builds
+  if (process.env.EXPO_PUBLIC_AUTH_API_URL) {
+    let url = process.env.EXPO_PUBLIC_AUTH_API_URL;
+    if (Platform.OS === 'android' && url.includes('localhost')) {
+      url = url.replace('localhost', '10.0.2.2').replace('127.0.0.1', '10.0.2.2');
+    }
+    return url;
+  }
+
+  // 3. Auto-detect Native Dev (Expo Metro)
+  if (__DEV__) {
+    const host = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+    return `http://${host}:8000/api/v1`;
+  }
+
+  return 'https://api-auth.ayeapps.com/api/v1';
+};
+
+
+export const api = {
+  async checkHealth(): Promise<boolean> {
+    const baseUrl = getApiBaseUrl();
+    const healthUrl = baseUrl.endsWith('/api/v1')
+      ? `${baseUrl.replace('/api/v1', '')}/health`
+      : `${baseUrl}/health`;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+      const res = await fetch(healthUrl, {
+        method: 'GET',
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      return res.ok;
+    } catch {
+      return false;
+    }
+  },
+
+  async login(payload: { email: string; password: string; turnstile_token?: string }): Promise<{ access_token: string; refresh_token?: string; user?: User }> {
+    const res = await fetch(`${getAuthApiBaseUrl()}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...payload, app_client: 'finance' }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Credenciales inválidas');
+    }
+    return res.json();
+  },
+
+  async register(payload: { name: string; email: string; password: string; turnstile_token?: string }): Promise<{ access_token: string; refresh_token?: string }> {
+    const res = await fetch(`${getAuthApiBaseUrl()}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...payload, app_client: 'finance' }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al registrar usuario');
+    }
+    return res.json();
+  },
+
+  async loginWithGoogle(idToken: string): Promise<{ access_token: string; refresh_token?: string }> {
+    const res = await fetch(`${getAuthApiBaseUrl()}/auth/oauth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id_token: idToken, app_client: 'finance' }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error con autenticación de Google');
+    }
+    return res.json();
+  },
+
+  async loginWithApple(identityToken: string, name?: string, email?: string): Promise<{ access_token: string; refresh_token?: string }> {
+    const res = await fetch(`${getAuthApiBaseUrl()}/auth/oauth/apple`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identity_token: identityToken, name, email, app_client: 'finance' }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error con autenticación de Apple');
+    }
+    return res.json();
+  },
+
+  async refreshToken(refreshToken: string): Promise<{ access_token: string; refresh_token?: string }> {
+    const res = await fetch(`${getAuthApiBaseUrl()}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+    if (!res.ok) {
+      throw new Error('No se pudo refrescar el token');
+    }
+    return res.json();
+  },
+
+  async getMe(): Promise<User> {
+    const token = await authStorage.getAccessToken();
+    const res = await fetch(`${getAuthApiBaseUrl()}/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.status === 401 || res.status === 403) {
+      throw new Error('No autorizado');
+    }
+    if (!res.ok) {
+      throw new Error('Error de conexión o servidor');
+    }
+    return res.json();
+  },
+
+  async updateProfile(data: { name?: string; email?: string; current_password?: string; new_password?: string }): Promise<User> {
+    const token = await authStorage.getAccessToken();
+    const res = await fetch(`${getAuthApiBaseUrl()}/auth/me`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al actualizar perfil');
+    }
+    return res.json();
+  },
+
+  async logout(): Promise<void> {
+    const token = await authStorage.getAccessToken();
+    try {
+      await fetch(`${getAuthApiBaseUrl()}/auth/logout`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch {}
+  },
+
+  async getSyncDelta(since?: string | null): Promise<SyncDeltaResponse> {
+    const token = await authStorage.getAccessToken();
+    const url = since
+      ? `${getApiBaseUrl()}/sync/delta?since=${encodeURIComponent(since)}`
+      : `${getApiBaseUrl()}/sync/delta`;
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error('Error al sincronizar datos');
+    return res.json();
+  },
+
+  async getSummary(): Promise<AccountSummary> {
+    const token = await authStorage.getAccessToken();
+    const res = await fetch(`${getApiBaseUrl()}/accounts/summary`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error('Error al cargar resumen');
+    return res.json();
+  },
+
+  async getAccounts(): Promise<Account[]> {
+    const token = await authStorage.getAccessToken();
+    const res = await fetch(`${getApiBaseUrl()}/accounts/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error('Error al cargar cuentas');
+    const accounts: Account[] = await res.json();
+    if (token) {
+      widgetBridge.syncWidgetData(token, accounts).catch(() => {});
+    }
+    return accounts;
+  },
+
+  async createAccount(data: any): Promise<Account> {
+    const token = await authStorage.getAccessToken();
+    const res = await fetch(`${getApiBaseUrl()}/accounts/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const msg = Array.isArray(err.detail)
+        ? err.detail.map((e: any) => e.msg).join(', ')
+        : err.detail || 'Error al crear cuenta';
+      throw new Error(msg);
+    }
+    return res.json();
+  },
+
+  async updateAccount(id: string, data: any): Promise<Account> {
+    const token = await authStorage.getAccessToken();
+    const res = await fetch(`${getApiBaseUrl()}/accounts/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const msg = Array.isArray(err.detail)
+        ? err.detail.map((e: any) => e.msg).join(', ')
+        : err.detail || 'Error al actualizar cuenta';
+      throw new Error(msg);
+    }
+    return res.json();
+  },
+
+  async deleteAccount(id?: string): Promise<void> {
+    const token = await authStorage.getAccessToken();
+    if (id) {
+      const res = await fetch(`${getApiBaseUrl()}/accounts/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'Error al eliminar cuenta');
+      }
+      return;
+    }
+    const res = await fetch(`${getAuthApiBaseUrl()}/auth/me`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al eliminar cuenta');
+    }
+  },
+
+  async getTransactions(page = 1, limit = 20): Promise<PaginatedResponse<Transaction>> {
+    const token = await authStorage.getAccessToken();
+    const res = await fetch(`${getApiBaseUrl()}/transactions/?page=${page}&limit=${limit}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error('Error al cargar transacciones');
+    return res.json();
+  },
+
+  async createTransaction(data: any): Promise<Transaction> {
+    const token = await authStorage.getAccessToken();
+    const res = await fetch(`${getApiBaseUrl()}/transactions/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const msg = Array.isArray(err.detail)
+        ? err.detail.map((e: any) => e.msg).join(', ')
+        : err.detail || 'Error al registrar movimiento';
+      throw new Error(msg);
+    }
+    return res.json();
+  },
+
+  async deleteTransaction(id: string): Promise<void> {
+    const token = await authStorage.getAccessToken();
+    const res = await fetch(`${getApiBaseUrl()}/transactions/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error('Error al eliminar movimiento');
+  },
+
+  async getRecurring(): Promise<RecurringItem[]> {
+    const token = await authStorage.getAccessToken();
+    const res = await fetch(`${getApiBaseUrl()}/recurring/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error('Error al cargar recurrentes');
+    return res.json();
+  },
+
+  async createRecurring(data: {
+    name: string;
+    type: 'ingreso_fijo' | 'gasto_fijo' | 'mensualidad';
+    amount: string | number;
+    frequency: 'semanal' | 'quincenal' | 'mensual';
+    day_of_month?: number | null;
+    account_id: string;
+    next_date?: string | null;
+    is_active?: boolean;
+  }): Promise<RecurringItem> {
+    const token = await authStorage.getAccessToken();
+    const res = await fetch(`${getApiBaseUrl()}/recurring/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        ...data,
+        amount: String(data.amount),
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al crear recurrente');
+    }
+    return res.json();
+  },
+
+  async deleteRecurring(id: string): Promise<void> {
+    const token = await authStorage.getAccessToken();
+    const res = await fetch(`${getApiBaseUrl()}/recurring/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error('Error al eliminar recurrente');
+  },
+
+  async applyRecurring(id: string): Promise<Transaction> {
+    const token = await authStorage.getAccessToken();
+    const res = await fetch(`${getApiBaseUrl()}/recurring/${id}/apply`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al aplicar recurrente');
+    }
+    return res.json();
+  },
+
+  async deleteUserAccount(): Promise<void> {
+    const token = await authStorage.getAccessToken();
+    const res = await fetch(`${getAuthApiBaseUrl()}/auth/me`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      await fetch(`${getApiBaseUrl()}/auth/me`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {});
+    }
+  },
+};
