@@ -5,6 +5,7 @@ import { api } from '../services/api';
 import { authStorage } from '../services/authStorage';
 import { widgetBridge } from '../services/widgetBridge';
 import { useFinanceStore } from './useFinanceStore';
+import { useSubscriptionStore } from './useSubscriptionStore';
 import { User } from '../types';
 
 interface AuthState {
@@ -89,6 +90,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           try {
             const user = await api.getMe();
             set({ user, isAuthenticated: true, isInitializing: false, isLoading: false });
+            useSubscriptionStore.getState().syncUser(user.id);
             // Synchronize accounts to native widget bridge
             api.getAccounts()
               .then((accounts) => {
@@ -149,6 +151,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await authStorage.setTokens(data.access_token, data.refresh_token);
       const user = await api.getMe();
       set({ user, isAuthenticated: true, isLoading: false, error: null });
+      useSubscriptionStore.getState().syncUser(user.id);
       api.getAccounts()
         .then((accounts) => {
           widgetBridge.syncWidgetData(data.access_token, accounts).catch(() => {});
@@ -167,6 +170,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await authStorage.setTokens(data.access_token, data.refresh_token);
       const user = await api.getMe();
       set({ user, isAuthenticated: true, isLoading: false, error: null });
+      useSubscriptionStore.getState().syncUser(user.id);
       api.getAccounts()
         .then((accounts) => {
           widgetBridge.syncWidgetData(data.access_token, accounts).catch(() => {});
@@ -185,6 +189,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await authStorage.setTokens(data.access_token, data.refresh_token);
       const user = await api.getMe();
       set({ user, isAuthenticated: true, isLoading: false, error: null });
+      useSubscriptionStore.getState().syncUser(user.id);
       api.getAccounts()
         .then((accounts) => {
           widgetBridge.syncWidgetData(data.access_token, accounts).catch(() => {});
@@ -203,6 +208,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await authStorage.setTokens(data.access_token, data.refresh_token);
       const user = await api.getMe();
       set({ user, isAuthenticated: true, isLoading: false, error: null });
+      useSubscriptionStore.getState().syncUser(user.id);
       api.getAccounts()
         .then((accounts) => {
           widgetBridge.syncWidgetData(data.access_token, accounts).catch(() => {});
@@ -219,6 +225,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     await authStorage.clearTokens();
     await widgetBridge.clearWidgetData().catch(() => {});
     await useFinanceStore.getState().clearStore().catch(() => {});
+    await useSubscriptionStore.getState().clearUser().catch(() => {});
     set({ user: null, isAuthenticated: false, isLoading: false, error: null });
   },
 
@@ -229,6 +236,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await authStorage.clearTokens();
       await widgetBridge.clearWidgetData().catch(() => {});
       await useFinanceStore.getState().clearStore().catch(() => {});
+      await useSubscriptionStore.getState().clearUser().catch(() => {});
       set({ user: null, isAuthenticated: false, isLoading: false, error: null });
     } catch (err: any) {
       set({ isLoading: false });

@@ -450,3 +450,234 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
     ]);
   },
 }));
+
+/**
+ * Utility to instantly push the current Zustand store state to the native widgets.
+ * We omit the `summary` parameter to force the widget bridge to compute 
+ * accurate optimistic totals (like grand_total, liquid_total) from the current accounts.
+ */
+function pushStateToWidgets() {
+  const state = useFinanceStore.getState();
+  authStorage.getAccessToken().then((token) => {
+    if (token) {
+      widgetBridge.syncWidgetData(token, state.accounts, state.transactions, undefined).catch(() => {});
+    }
+  });
+}
+
+// Hook into optimistic update completions to refresh widget instantly.
+const originalAddTransaction = useFinanceStore.getState().addTransactionOptimistic;
+useFinanceStore.setState({
+  addTransactionOptimistic: async (data: any) => {
+    const tempId = `temp_${Date.now()}`;
+    const prevAccounts = [...useFinanceStore.getState().accounts];
+    const prevTransactions = [...useFinanceStore.getState().transactions];
+
+    const parsedAmount = parseFloat(String(data.amount || '0')) || 0;
+    const originAccountId = data.account_id;
+    const destAccountId = data.destination_account_id;
+    const txType = data.type;
+
+    const nextAccounts = prevAccounts.map((acc) => {
+      let balanceNum = parseFloat(acc.current_balance) || 0;
+      if (acc.id === originAccountId) {
+        if (acc.account_type === 'credito') {
+          balanceNum = txType === 'ingreso' ? balanceNum - parsedAmount : balanceNum + parsedAmount;
+        } else {
+          balanceNum = txType === 'ingreso' ? balanceNum + parsedAmount : balanceNum - parsedAmount;
+        }
+        return { ...acc, current_balance: balanceNum.toFixed(2) };
+      }
+      if (acc.id === destAccountId && txType === 'transferencia') {
+        if (acc.account_type === 'credito') {
+          balanceNum = balanceNum - parsedAmount;
+        } else {
+          balanceNum = balanceNum + parsedAmount;
+        }
+        return { ...acc, current_balance: balanceNum.toFixed(2) };
+      }
+      return acc;
+    });
+
+    const optimisticTx: Transaction = {
+      id: tempId,
+      user_id: '',
+      account_id: originAccountId,
+      destination_account_id: destAccountId,
+      amount: String(parsedAmount),
+      type: txType,
+      concept: data.concept || 'Movimiento',
+      category: data.category || 'General',
+      date: data.date || new Date().toISOString(),
+      notes: data.notes || null,
+      is_recurring: Boolean(data.is_recurring),
+      recurring_item_id: data.recurring_item_id || null,
+      is_msi: Boolean(data.is_msi),
+      msi_months: data.msi_months || null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    useFinanceStore.setState({
+      transactions: [optimisticTx, ...prevTransactions],
+      accounts: nextAccounts,
+    });
+    pushStateToWidgets(); // Instantly update widgets!
+
+    try {
+      const realTx = await api.createTransaction(data);
+      const reconciledTransactions = useFinanceStore.getState().transactions.map((t) => (t.id === tempId ? realTx : t));
+      useFinanceStore.setState({ transactions: reconciledTransactions });
+      
+      AsyncStorage.setItem(
+        FINANCE_CACHE_KEY,
+        JSON.stringify({
+          accounts: useFinanceStore.getState().accounts,
+          transactions: reconciledTransactions,
+          recurringItems: useFinanceStore.getState().recurringItems,
+          summary: useFinanceStore.getState().summary,
+          lastSyncedAt: useFinanceStore.getState().lastSyncedAt,
+        })
+      ).catch(() => {});
+
+      useFinanceStore.getState().syncDelta(false).catch(() => {});
+      return realTx;
+    } catch (err) {
+      useFinanceStore.setState({
+        transactions: prevTransactions,
+        accounts: prevAccounts,
+      });
+      pushStateToWidgets();
+      throw err;
+    }
+  },
+  
+  deleteTransactionOptimistic: async (id: string) => {
+    const prevTransactions = [...useFinanceStore.getState().transactions];
+    const prevAccounts = [...useFinanceStore.getState().accounts];
+
+    const targetTx = prevTransactions.find((t) => t.id === id);
+    if (!targetTx) return;
+
+    const parsedAmount = parseFloat(targetTx.amount) || 0;
+    const originAccountId = targetTx.account_id;
+    const destAccountId = targetTx.destination_account_id;
+    const txType = targetTx.type;
+
+    const nextAccounts = prevAccounts.map((acc) => {
+      let balanceNum = parseFloat(acc.current_balance) || 0;
+      if (acc.id === originAccountId) {
+        if (acc.account_type === 'credito') {
+          balanceNum = txType === 'ingreso' ? balanceNum + parsedAmount : balanceNum - parsedAmount;
+        } else {
+          balanceNum = txType === 'ingreso' ? balanceNum - parsedAmount : balanceNum + parsedAmount;
+        }
+        return { ...acc, current_balance: balanceNum.toFixed(2) };
+      }
+      if (acc.id === destAccountId && txType === 'transferencia') {
+        if (acc.account_type === 'credito') {
+          balanceNum = balanceNum + parsedAmount;
+        } else {
+          balanceNum = balanceNum - parsedAmount;
+        }
+        return { ...acc, current_balance: balanceNum.toFixed(2) };
+      }
+      return acc;
+    });
+
+    useFinanceStore.setState({
+      transactions: prevTransactions.filter((t) => t.id !== id),
+      accounts: nextAccounts,
+    });
+    pushStateToWidgets(); // Instantly update widgets!
+
+    try {
+      await api.deleteTransaction(id);
+      AsyncStorage.setItem(
+        FINANCE_CACHE_KEY,
+        JSON.stringify({
+          accounts: nextAccounts,
+          transactions: useFinanceStore.getState().transactions,
+          recurringItems: useFinanceStore.getState().recurringItems,
+          summary: useFinanceStore.getState().summary,
+          lastSyncedAt: useFinanceStore.getState().lastSyncedAt,
+        })
+      ).catch(() => {});
+
+      useFinanceStore.getState().syncDelta(false).catch(() => {});
+    } catch (err) {
+      useFinanceStore.setState({ transactions: prevTransactions, accounts: prevAccounts });
+      pushStateToWidgets();
+      throw err;
+    }
+  },
+
+  addAccountOptimistic: async (data: any) => {
+    const acc = await api.createAccount(data);
+    const nextAccounts = [...useFinanceStore.getState().accounts, acc];
+    useFinanceStore.setState({ accounts: nextAccounts });
+    pushStateToWidgets(); // Update widgets!
+
+    AsyncStorage.setItem(
+      FINANCE_CACHE_KEY,
+      JSON.stringify({
+        accounts: nextAccounts,
+        transactions: useFinanceStore.getState().transactions,
+        recurringItems: useFinanceStore.getState().recurringItems,
+        summary: useFinanceStore.getState().summary,
+        lastSyncedAt: useFinanceStore.getState().lastSyncedAt,
+      })
+    ).catch(() => {});
+
+    useFinanceStore.getState().syncDelta(false).catch(() => {});
+    return acc;
+  },
+
+  updateAccountOptimistic: async (id: string, data: any) => {
+    const prevAccounts = [...useFinanceStore.getState().accounts];
+    const acc = await api.updateAccount(id, data);
+    const nextAccounts = prevAccounts.map((a) => (a.id === id ? acc : a));
+    useFinanceStore.setState({ accounts: nextAccounts });
+    pushStateToWidgets(); // Update widgets!
+
+    AsyncStorage.setItem(
+      FINANCE_CACHE_KEY,
+      JSON.stringify({
+        accounts: nextAccounts,
+        transactions: useFinanceStore.getState().transactions,
+        recurringItems: useFinanceStore.getState().recurringItems,
+        summary: useFinanceStore.getState().summary,
+        lastSyncedAt: useFinanceStore.getState().lastSyncedAt,
+      })
+    ).catch(() => {});
+
+    useFinanceStore.getState().syncDelta(false).catch(() => {});
+    return acc;
+  },
+
+  deleteAccountOptimistic: async (id: string) => {
+    const prevAccounts = [...useFinanceStore.getState().accounts];
+    useFinanceStore.setState({ accounts: prevAccounts.filter((a) => a.id !== id) });
+    pushStateToWidgets(); // Update widgets!
+
+    try {
+      await api.deleteAccount(id);
+      AsyncStorage.setItem(
+        FINANCE_CACHE_KEY,
+        JSON.stringify({
+          accounts: useFinanceStore.getState().accounts,
+          transactions: useFinanceStore.getState().transactions,
+          recurringItems: useFinanceStore.getState().recurringItems,
+          summary: useFinanceStore.getState().summary,
+          lastSyncedAt: useFinanceStore.getState().lastSyncedAt,
+        })
+      ).catch(() => {});
+
+      useFinanceStore.getState().syncDelta(false).catch(() => {});
+    } catch (err) {
+      useFinanceStore.setState({ accounts: prevAccounts });
+      pushStateToWidgets();
+      throw err;
+    }
+  }
+});

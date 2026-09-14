@@ -38,11 +38,16 @@ import {
   AlertTriangle,
   Layers,
   Sparkles,
+  Crown,
+  CreditCard,
+  Check,
 } from 'lucide-react-native';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useSubscriptionStore } from '../../store/useSubscriptionStore';
 import { useTheme } from '../../hooks/useTheme';
 import { useTranslation } from '../../store/useLanguageStore';
 import { api } from '../../services/api';
+import { AyePaywallModal } from '../paywall/AyePaywallModal';
 
 interface SettingsViewProps {
   onBack: () => void;
@@ -75,6 +80,30 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onBack }) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [deleteErrorMsg, setDeleteErrorMsg] = useState<string | null>(null);
+
+  // Subscription state from RevenueCat
+  const isPro = useSubscriptionStore((state) => state.isPro);
+  const isSubLoading = useSubscriptionStore((state) => state.isLoading);
+  const openPaywall = useSubscriptionStore((state) => state.openPaywall);
+  const restorePurchases = useSubscriptionStore((state) => state.restore);
+  const openCustomerCenter = useSubscriptionStore((state) => state.openCustomerCenter);
+  const [subFeedbackMsg, setSubFeedbackMsg] = useState<{ text: string; isError?: boolean } | null>(null);
+  const [isPaywallOpen, setIsPaywallOpen] = useState(false);
+
+  const handleOpenPaywall = () => {
+    setSubFeedbackMsg(null);
+    setIsPaywallOpen(true);
+  };
+
+  const handleRestorePurchases = async () => {
+    setSubFeedbackMsg(null);
+    const restored = await restorePurchases();
+    if (restored) {
+      setSubFeedbackMsg({ text: '¡Compras y suscripciones restauradas exitosamente!' });
+    } else {
+      setSubFeedbackMsg({ text: 'No se encontraron compras activas para restaurar.', isError: true });
+    }
+  };
 
   const handleDeleteAccount = async () => {
     setIsDeletingAccount(true);
@@ -454,7 +483,157 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onBack }) => {
             ) : null}
           </View>
 
-          {/* ── CARD 2: APPEARANCE & THEME PREFERENCES ── */}
+          {/* ── CARD 2: REVENUECAT SUBSCRIPTION & PASS ── */}
+          <View
+            style={[
+              styles.card,
+              {
+                borderColor: isPro ? colors.accent : colors.borderColor,
+                backgroundColor: colors.bgSurface,
+                shadowColor: colors.shadowColor,
+                ...(Platform.OS === 'web' ? { boxShadow: `4px 4px 0px 0px ${isPro ? colors.accent : colors.shadowColor}` } : {}),
+              },
+            ]}
+          >
+            <View style={styles.cardHeaderWithAction}>
+              <View style={styles.cardHeader}>
+                <Crown size={16} color={colors.accent} strokeWidth={2.5} />
+                <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
+                  MEMBRESÍA & SUSCRIPCIÓN PRO
+                </Text>
+              </View>
+
+              <View
+                style={[
+                  styles.pillBadge,
+                  {
+                    borderColor: isPro ? colors.accent : colors.borderColor,
+                    backgroundColor: isPro ? colors.accentSubtle : colors.bgBase,
+                  },
+                ]}
+              >
+                <Text style={[styles.pillBadgeText, { color: isPro ? colors.accent : colors.textMuted }]}>
+                  {isPro ? 'ESTADO: PRO ACTIVO' : 'NIVEL ESTÁNDAR'}
+                </Text>
+              </View>
+            </View>
+
+            {/* Subscription Alert / Status Feedback */}
+            {subFeedbackMsg && (
+              <View
+                style={[
+                  styles.alertBanner,
+                  {
+                    backgroundColor: subFeedbackMsg.isError ? colors.accentDangerSubtle : colors.accentSuccessSubtle,
+                    borderColor: subFeedbackMsg.isError ? colors.accentDanger : colors.accentSuccess,
+                    marginBottom: 16,
+                  },
+                ]}
+              >
+                {subFeedbackMsg.isError ? (
+                  <AlertCircle size={15} color={colors.accentDanger} />
+                ) : (
+                  <CheckCircle2 size={15} color={colors.accentSuccess} />
+                )}
+                <Text
+                  style={[
+                    styles.alertText,
+                    { color: subFeedbackMsg.isError ? colors.accentDanger : colors.accentSuccess },
+                  ]}
+                >
+                  {subFeedbackMsg.text}
+                </Text>
+              </View>
+            )}
+
+            <Text style={[styles.subDescription, { color: colors.textSecondary }]}>
+              {isPro
+                ? 'Tienes acceso ilimitado a todas las funciones financieras avanzadas, sincronización en tiempo real y widgets de precisión de AyeApps.'
+                : 'Desbloquea cuentas bancarias ilimitadas, transacciones recurrentes automatizadas, exportación contable completa y widgets nativos.'}
+            </Text>
+
+            <View style={styles.subFeaturesGrid}>
+              {[
+                'Cuentas, cajas y billeteras ilimitadas',
+                'Gastos e ingresos recurrentes automáticos',
+                'Widgets interactivos de escritorio y pantalla de bloqueo',
+                'Sincronización multi-dispositivo en la nube Aye',
+              ].map((feature, idx) => (
+                <View key={idx} style={styles.subFeatureItem}>
+                  <View style={[styles.featureCheckBadge, { backgroundColor: colors.accentSubtle }]}>
+                    <Check size={12} color={colors.accent} strokeWidth={3} />
+                  </View>
+                  <Text style={[styles.featureText, { color: colors.textPrimary }]}>{feature}</Text>
+                </View>
+              ))}
+            </View>
+
+            <View style={styles.subActionsContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.primaryUpgradeBtn,
+                  {
+                    backgroundColor: colors.accent,
+                    shadowColor: colors.shadowColor,
+                    ...(Platform.OS === 'web' ? { boxShadow: `3px 3px 0px 0px ${colors.shadowColor}` } : {}),
+                  },
+                ]}
+                onPress={handleOpenPaywall}
+                disabled={isSubLoading}
+                activeOpacity={0.8}
+              >
+                {isSubLoading ? (
+                  <ActivityIndicator size="small" color="#000000" />
+                ) : (
+                  <>
+                    <Sparkles size={15} color="#000000" strokeWidth={2.5} />
+                    <Text style={styles.primaryUpgradeBtnText}>
+                      {isPro ? 'VER PLANES & OFERTAS' : 'OBTENER AYEAPPS PRO'}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              <View style={styles.subSecondaryActionsRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.secondarySubBtn,
+                    {
+                      borderColor: colors.borderColor,
+                      backgroundColor: colors.bgBase,
+                    },
+                  ]}
+                  onPress={handleRestorePurchases}
+                  disabled={isSubLoading}
+                  activeOpacity={0.7}
+                >
+                  <RefreshCw size={13} color={colors.textSecondary} strokeWidth={2.2} />
+                  <Text style={[styles.secondarySubBtnText, { color: colors.textPrimary }]}>
+                    RESTAURAR COMPRAS
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.secondarySubBtn,
+                    {
+                      borderColor: colors.borderColor,
+                      backgroundColor: colors.bgBase,
+                    },
+                  ]}
+                  onPress={openCustomerCenter}
+                  activeOpacity={0.7}
+                >
+                  <CreditCard size={13} color={colors.textSecondary} strokeWidth={2.2} />
+                  <Text style={[styles.secondarySubBtnText, { color: colors.textPrimary }]}>
+                    GESTIONAR
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          {/* ── CARD 3: APPEARANCE & THEME PREFERENCES ── */}
           <View
             style={[
               styles.card,
@@ -805,6 +984,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onBack }) => {
           </View>
         </View>
       </Modal>
+
+      {/* AyePaywallModal (Custom Atelier UI) */}
+      <AyePaywallModal
+        visible={isPaywallOpen}
+        onClose={() => setIsPaywallOpen(false)}
+        onSuccess={() => {
+          setSubFeedbackMsg({ text: '¡Bienvenido a AyeApps Pro / Unlimited!' });
+        }}
+      />
     </View>
   );
 };
@@ -1223,5 +1411,68 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
     color: '#ffffff',
     letterSpacing: 0.8,
+  },
+  subDescription: {
+    fontSize: 13,
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  subFeaturesGrid: {
+    gap: 10,
+    marginBottom: 20,
+  },
+  subFeatureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  featureCheckBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featureText: {
+    fontSize: 13,
+    fontWeight: '600',
+    flex: 1,
+  },
+  subActionsContainer: {
+    gap: 12,
+  },
+  primaryUpgradeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  primaryUpgradeBtnText: {
+    color: '#000000',
+    fontWeight: '900',
+    fontSize: 13,
+    letterSpacing: 1,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+  },
+  subSecondaryActionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  secondarySubBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    paddingVertical: 12,
+    gap: 6,
+  },
+  secondarySubBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
 });

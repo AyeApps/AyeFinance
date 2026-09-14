@@ -209,6 +209,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate, on
                 style={[
                   styles.metricCard,
                   !isDesktop ? styles.metricCardMobile : styles.metricCardDesktop,
+                  isTablet && styles.metricCardTablet,
                   isSmallPhone && styles.metricCardSmallPhone,
                   {
                     backgroundColor: colors.bgSurface,
@@ -255,6 +256,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate, on
                 style={[
                   styles.metricCard,
                   !isDesktop ? styles.metricCardMobile : styles.metricCardDesktop,
+                  isTablet && styles.metricCardTablet,
                   isSmallPhone && styles.metricCardSmallPhone,
                   {
                     backgroundColor: colors.bgSurface,
@@ -301,6 +303,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate, on
                 style={[
                   styles.metricCard,
                   !isDesktop ? styles.metricCardMobile : styles.metricCardDesktop,
+                  isTablet && styles.metricCardTablet,
                   isSmallPhone && styles.metricCardSmallPhone,
                   {
                     backgroundColor: colors.bgSurface,
@@ -347,6 +350,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate, on
                 style={[
                   styles.metricCard,
                   !isDesktop ? styles.metricCardMobile : styles.metricCardDesktop,
+                  isTablet && styles.metricCardTablet,
                   isSmallPhone && styles.metricCardSmallPhone,
                   {
                     backgroundColor: colors.bgSurface,
@@ -1267,12 +1271,21 @@ const styles = StyleSheet.create({
   metricCardMobile: {
     width: '48.5%',
     aspectRatio: 1,
+    maxHeight: 180,
     padding: 12,
+  },
+  metricCardTablet: {
+    width: '48.5%',
+    minHeight: 140,
+    maxHeight: 160,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
   metricCardSmallPhone: {
     width: '48.5%',
     padding: 10,
     aspectRatio: 1,
+    maxHeight: 150,
   },
   metricCardDesktop: {
     width: '23.8%',

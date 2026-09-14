@@ -21,6 +21,7 @@ import { useThemeStore } from './src/hooks/useTheme';
 import { useFinanceStore } from './src/store/useFinanceStore';
 import { useLanguageStore } from './src/store/useLanguageStore';
 import { useUIStore } from './src/store/useUIStore';
+import { useSubscriptionStore } from './src/store/useSubscriptionStore';
 import { AuthScreen } from './src/components/auth/AuthScreen';
 import { LandingPage } from './src/components/landing/LandingPage';
 import { DashboardScreen } from './src/components/dashboard/DashboardScreen';
@@ -231,6 +232,9 @@ function MainApp() {
   }, [syncDelta]);
 
   useEffect(() => {
+    // Inicializar SDK de RevenueCat y estado de suscripciones
+    useSubscriptionStore.getState().initPurchases();
+
     loadSavedTheme();
     loadSavedLanguage();
     initAuth();

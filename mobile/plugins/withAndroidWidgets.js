@@ -180,10 +180,17 @@ function withWidgetBridgePackage(config) {
     }
     
     if (!contents.includes('WidgetBridgePackage()')) {
-      // In Expo SDK 50+, packages are added in PackageList(this).packages.apply { ... }
-      // If it doesn't match, we fallback to just trying to insert it after PackageList(this).packages
-      const packageListRegex = /PackageList\(this\)\.packages(?:\.apply\s*\{\s*)?/;
-      if (packageListRegex.test(contents)) {
+      const applyBlockRegex = /PackageList\(this\)\.packages\.apply\s*\{\s*([^}]*)\}/;
+      if (applyBlockRegex.test(contents)) {
+        contents = contents.replace(
+          applyBlockRegex,
+          `PackageList(this).packages.apply {
+          $1
+          add(WidgetBridgePackage())
+        }`
+        );
+      } else {
+        // Fallback for older Expo versions
         contents = contents.replace(
           /val packages = PackageList\(this\)\.packages/,
           `val packages = PackageList(this).packages\n        packages.add(WidgetBridgePackage())`
