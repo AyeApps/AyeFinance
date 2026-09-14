@@ -97,11 +97,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onBack }) => {
 
   const handleRestorePurchases = async () => {
     setSubFeedbackMsg(null);
-    const restored = await restorePurchases();
-    if (restored) {
-      setSubFeedbackMsg({ text: '¡Compras y suscripciones restauradas exitosamente!' });
-    } else {
-      setSubFeedbackMsg({ text: 'No se encontraron compras activas para restaurar.', isError: true });
+    try {
+      const restored = await restorePurchases();
+      if (restored) {
+        setSubFeedbackMsg({ text: '¡Compras y suscripciones restauradas exitosamente!' });
+      } else {
+        setSubFeedbackMsg({ text: 'No se encontraron compras activas para restaurar.', isError: true });
+      }
+    } catch (err: any) {
+      setSubFeedbackMsg({ text: err?.message || 'Error al restaurar compras.', isError: true });
     }
   };
 

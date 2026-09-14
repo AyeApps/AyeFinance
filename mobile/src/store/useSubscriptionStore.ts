@@ -107,7 +107,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       return isPro;
     } catch (err: any) {
       set({ isLoading: false, error: err?.userCancelled ? null : err?.message });
-      return false;
+      throw err;
     }
   },
 
@@ -120,7 +120,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       return isPro;
     } catch (err: any) {
       set({ isLoading: false, error: err?.message || 'Error al restaurar compras' });
-      return false;
+      throw err;
     }
   },
 

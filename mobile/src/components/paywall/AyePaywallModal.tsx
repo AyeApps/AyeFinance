@@ -79,6 +79,8 @@ export const AyePaywallModal: React.FC<AyePaywallModalProps> = ({
       if (isPro) {
         if (onSuccess) onSuccess();
         onClose();
+      } else {
+        setFeedbackError('La compra se procesó, pero no se activaron los beneficios. Intenta restaurar tus compras.');
       }
     } catch (err: any) {
       if (!err?.userCancelled) {
