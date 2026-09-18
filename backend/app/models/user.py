@@ -13,6 +13,8 @@ class User(Document):
     is_active: bool = True
     is_verified: bool = False
     role: str = "user"
+    is_pro: bool = False
+    pro_updated_at: datetime | None = None
     login_attempts: int = 0
     locked_until: datetime | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

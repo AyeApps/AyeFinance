@@ -553,7 +553,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onBack }) => {
             <Text style={[styles.subDescription, { color: colors.textSecondary }]}>
               {isPro
                 ? 'Tienes acceso ilimitado a todas las funciones financieras avanzadas, sincronización en tiempo real y widgets de precisión de AyeApps.'
-                : 'Desbloquea cuentas bancarias ilimitadas, transacciones recurrentes automatizadas, exportación contable completa y widgets nativos.'}
+                : 'Desbloquea cuentas ilimitadas (gratis: hasta 5), transacciones recurrentes automatizadas y widgets nativos.'}
             </Text>
 
             <View style={styles.subFeaturesGrid}>

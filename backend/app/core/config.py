@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     # 🚀 2. ESPECÍFICAS DEL SERVICIO
     # ==========================================
     DB_NAME: str = "aye_finance_dev"
-
+    REVENUECAT_WEBHOOK_SECRET: str = ""
 
     # ==========================================
     # ⚙️ 3. CONFIGURACIÓN Y VALIDADORES ESTÁNDAR

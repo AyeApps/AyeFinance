@@ -22,6 +22,8 @@ import { api } from '../../services/api';
 import { Account, AccountType } from '../../types';
 import { BankAvatar } from '../ui/BankAvatar';
 import { BankSelector } from '../ui/BankSelector';
+import { useSubscriptionStore } from '../../store/useSubscriptionStore';
+import { AyePaywallModal } from '../paywall/AyePaywallModal';
 import {
   evaluateCreditUtilization,
   evaluateFinancingCycle,
@@ -137,6 +139,9 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
   const [modalOpen, setModalOpen] = useState(false);
 
   const isLoading = storeLoading && accounts.length === 0;
+
+  const isPro = useSubscriptionStore((state) => state.isPro);
+  const [isPaywallOpen, setIsPaywallOpen] = useState(false);
 
   // Form state
   const [name, setName] = useState('');
@@ -288,6 +293,11 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
   };
 
   const openCreateModal = (targetBankId?: MexicanBankId) => {
+    if (!isPro && accounts.length >= 5) {
+      setIsPaywallOpen(true);
+      return;
+    }
+
     if (targetBankId && targetBankId !== 'generic') {
       setSelectedBankId(targetBankId);
       setManualOverride(true);
@@ -2388,6 +2398,8 @@ export const AccountsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      <AyePaywallModal visible={isPaywallOpen} onClose={() => setIsPaywallOpen(false)} />
     </View>
   );
 };

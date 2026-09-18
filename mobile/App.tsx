@@ -35,6 +35,7 @@ import { FinanceFloatingDock } from './src/components/navigation/FinanceFloating
 import { SidebarDrawer } from './src/components/navigation/SidebarDrawer';
 import { QuickAddModal, QuickAddInitialData } from './src/components/transactions/QuickAddModal';
 import { TransactionType } from './src/types';
+import { PremiumGate } from './src/components/paywall/PremiumGate';
 
 /**
  * Parses deep link URLs (e.g. ayefinance://transaction/new or ayefinance://quick-add)
@@ -351,7 +352,11 @@ function MainApp() {
       case 'transactions':
         return <TransactionsScreen onBack={() => setCurrentScreen('dashboard')} />;
       case 'recurring':
-        return <RecurringScreen onBack={() => setCurrentScreen('dashboard')} />;
+        return (
+          <PremiumGate title="RECURRENTES PRO" description="Automatiza gastos e ingresos recurrentes.">
+            <RecurringScreen onBack={() => setCurrentScreen('dashboard')} />
+          </PremiumGate>
+        );
       default:
         return (
           <DashboardScreen

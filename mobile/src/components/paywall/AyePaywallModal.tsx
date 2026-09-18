@@ -117,11 +117,11 @@ export const AyePaywallModal: React.FC<AyePaywallModalProps> = ({
   const features = [
     {
       title: 'Cuentas & Billeteras Ilimitadas',
-      desc: 'Bancos, efectivo, cripto y líneas de crédito sin ninguna restricción.',
+      desc: 'Sin límite de 5 cuentas del plan gratuito — bancos, efectivo, cripto y líneas de crédito.',
     },
     {
       title: 'Automatización de Recurrentes',
-      desc: 'Programación de gastos fijos, suscripciones y cobros proyectados.',
+      desc: 'Función exclusiva para programar gastos fijos, suscripciones y cobros proyectados.',
     },
     {
       title: 'Widgets Nativos de Precisión',
@@ -130,10 +130,6 @@ export const AyePaywallModal: React.FC<AyePaywallModalProps> = ({
     {
       title: 'Sincronización en la Nube Aye',
       desc: 'Tus datos respaldados en tiempo real con cifrado de extremo a extremo.',
-    },
-    {
-      title: 'Reportes y Exportación Contable',
-      desc: 'Exportación completa en CSV / PDF para análisis patrimonial.',
     },
   ];
 

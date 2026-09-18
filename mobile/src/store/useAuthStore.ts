@@ -94,7 +94,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             // Synchronize accounts to native widget bridge
             api.getAccounts()
               .then((accounts) => {
-                widgetBridge.syncWidgetData(token, accounts).catch(() => {});
+                if (useSubscriptionStore.getState().isPro) {
+                  widgetBridge.syncWidgetData(token, accounts).catch(() => {});
+                } else {
+                  widgetBridge.clearWidgetData().catch(() => {});
+                }
               })
               .catch(() => {});
             return;
@@ -113,7 +117,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                   
                   // Sincronizar cuentas
                   api.getAccounts().then((accounts) => {
-                    widgetBridge.syncWidgetData(newTokens.access_token, accounts).catch(() => {});
+                    if (useSubscriptionStore.getState().isPro) {
+                      widgetBridge.syncWidgetData(newTokens.access_token, accounts).catch(() => {});
+                    } else {
+                      widgetBridge.clearWidgetData().catch(() => {});
+                    }
                   }).catch(() => {});
                   return;
                 }
@@ -154,7 +162,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       useSubscriptionStore.getState().syncUser(user.id);
       api.getAccounts()
         .then((accounts) => {
-          widgetBridge.syncWidgetData(data.access_token, accounts).catch(() => {});
+          if (useSubscriptionStore.getState().isPro) {
+            widgetBridge.syncWidgetData(data.access_token, accounts).catch(() => {});
+          } else {
+            widgetBridge.clearWidgetData().catch(() => {});
+          }
         })
         .catch(() => {});
     } catch (err: any) {
@@ -173,7 +185,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       useSubscriptionStore.getState().syncUser(user.id);
       api.getAccounts()
         .then((accounts) => {
-          widgetBridge.syncWidgetData(data.access_token, accounts).catch(() => {});
+          if (useSubscriptionStore.getState().isPro) {
+            widgetBridge.syncWidgetData(data.access_token, accounts).catch(() => {});
+          } else {
+            widgetBridge.clearWidgetData().catch(() => {});
+          }
         })
         .catch(() => {});
     } catch (err: any) {
@@ -192,7 +208,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       useSubscriptionStore.getState().syncUser(user.id);
       api.getAccounts()
         .then((accounts) => {
-          widgetBridge.syncWidgetData(data.access_token, accounts).catch(() => {});
+          if (useSubscriptionStore.getState().isPro) {
+            widgetBridge.syncWidgetData(data.access_token, accounts).catch(() => {});
+          } else {
+            widgetBridge.clearWidgetData().catch(() => {});
+          }
         })
         .catch(() => {});
     } catch (err: any) {
@@ -211,7 +231,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       useSubscriptionStore.getState().syncUser(user.id);
       api.getAccounts()
         .then((accounts) => {
-          widgetBridge.syncWidgetData(data.access_token, accounts).catch(() => {});
+          if (useSubscriptionStore.getState().isPro) {
+            widgetBridge.syncWidgetData(data.access_token, accounts).catch(() => {});
+          } else {
+            widgetBridge.clearWidgetData().catch(() => {});
+          }
         })
         .catch(() => {});
     } catch (err: any) {
@@ -260,7 +284,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const token = await authStorage.getAccessToken();
       if (!token) return;
       const accounts = await api.getAccounts().catch(() => []);
-      await widgetBridge.syncWidgetData(token, accounts);
+      if (useSubscriptionStore.getState().isPro) {
+        await widgetBridge.syncWidgetData(token, accounts);
+      } else {
+        await widgetBridge.clearWidgetData();
+      }
     } catch {}
   },
 }));

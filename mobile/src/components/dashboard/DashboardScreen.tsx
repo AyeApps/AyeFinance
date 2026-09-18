@@ -51,6 +51,7 @@ import {
   CreditCardPaymentEstimates,
 } from '../../utils/cardBenefits';
 import { QuickAddInitialData } from '../transactions/QuickAddModal';
+import { PremiumGate } from '../paywall/PremiumGate';
 
 export const formatMoney = (val: string | number | undefined | null): string => {
   if (val === undefined || val === null || val === '') return '0.00';
@@ -1034,6 +1035,15 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate, on
                       })}
                     </View>
                   )}
+
+                  <PremiumGate
+                    title="CONECTAR BANCO AUTOMÁTICAMENTE"
+                    description="Vincula tus cuentas bancarias vía Open Banking y sincroniza movimientos en tiempo real."
+                  >
+                    <View style={[styles.accountBox, { backgroundColor: colors.bgSurface, borderColor: colors.borderColor, alignItems: 'center', justifyContent: 'center' }]}>
+                      <Text style={{ color: colors.textMuted }}>Banco conectado (demo)</Text>
+                    </View>
+                  </PremiumGate>
                 </View>
               </View>
 

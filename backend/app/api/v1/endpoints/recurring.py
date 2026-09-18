@@ -63,6 +63,11 @@ async def list_recurring_items(
 
 @router.post("/", response_model=RecurringResponse, status_code=status.HTTP_201_CREATED)
 async def create_recurring_item(current_user: CurrentUser, data: RecurringCreate):
+    if not current_user.is_pro:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Los recurrentes son una función exclusiva de AyeFinance PRO.",
+        )
     # Verify account ownership
     await get_account(str(current_user.id), data.account_id)
 

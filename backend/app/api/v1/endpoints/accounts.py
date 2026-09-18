@@ -54,7 +54,7 @@ async def list_accounts(current_user: CurrentUser):
 
 @router.post("/", response_model=AccountResponse, status_code=status.HTTP_201_CREATED)
 async def create_new_account(current_user: CurrentUser, data: AccountCreate):
-    acc = await create_account(str(current_user.id), data)
+    acc = await create_account(current_user, data)
     return _serialize_account(acc)
 
 

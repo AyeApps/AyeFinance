@@ -37,9 +37,25 @@ async def ensure_default_cash_account(user_id: str) -> None:
         await cash_account.insert()
 
 
-async def create_account(user_id: str, data: AccountCreate) -> Account:
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.user import User
+
+async def create_account(user: "User", data: AccountCreate) -> Account:
+    if not user.is_pro:
+        existing_count = await Account.find(
+            Account.user_id == user.id,
+            Account.deleted_at == None,  # noqa: E711
+        ).count()
+        if existing_count >= 5:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Límite de 5 cuentas gratuitas alcanzado. Obtén AyeFinance PRO para cuentas ilimitadas.",
+            )
+
     account = Account(
-        user_id=user_id,
+        user_id=user.id,
         name=data.name,
         account_type=data.account_type,
         currency=data.currency,
